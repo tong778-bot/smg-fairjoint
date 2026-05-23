@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FairJoint — คู่มือเตรียมเอกสารและยื่นฟ้องออนไลน์</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: #f0f2f5;
+}
+
+.download-bar {
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(135deg, #064e3b, #059669);
+  color: #fff; padding: 12px 20px;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  font-size: 14px; font-weight: 600;
+}
+.download-bar button {
+  padding: 8px 24px; border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: .15s;
+}
+.btn-png { background: #fff; color: #064e3b; }
+.btn-png:hover { background: #d1fae5; }
+
+@media print {
+  .download-bar { display: none !important; }
+  body { background: #fff; }
+}
+
+/* ── INFOGRAPHIC CANVAS ── */
+.infographic {
+  width: 800px;
+  margin: 20px auto;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,.1);
+}
+
+/* ── HEADER ── */
+.ig-header {
+  background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%);
+  color: #fff;
+  padding: 40px 48px 32px;
+  position: relative;
+  overflow: hidden;
+}
+.ig-header::after {
+  content: '';
+  position: absolute; right: -40px; top: -40px;
+  width: 200px; height: 200px;
+  background: rgba(255,255,255,.05);
+  border-radius: 50%;
+}
+.ig-header::before {
+  content: '';
+  position: absolute; right: 60px; bottom: -60px;
+  width: 160px; height: 160px;
+  background: rgba(255,255,255,.03);
+  border-radius: 50%;
+}
+.ig-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.15);
+  padding: 4px 14px; border-radius: 100px;
+  font-size: 11px; font-weight: 600; letter-spacing: .08em;
+  margin-bottom: 16px;
+}
+.ig-title {
+  font-size: 28px; font-weight: 800; line-height: 1.3;
+  margin-bottom: 8px;
+}
+.ig-sub {
+  font-size: 14px; font-weight: 400; opacity: .8; line-height: 1.6;
+}
+
+/* ── SECTION ── */
+.ig-section {
+  padding: 32px 48px;
+}
+.ig-section + .ig-section {
+  border-top: 2px dashed #e2e8f0;
+}
+
+.sec-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  background: #059669; color: #fff;
+  border-radius: 50%;
+  font-size: 14px; font-weight: 800;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.sec-title-row {
+  display: flex; align-items: center;
+  margin-bottom: 20px;
+}
+.sec-title {
+  font-size: 20px; font-weight: 800; color: #0f172a;
+}
+.sec-desc {
+  font-size: 13px; color: #64748b; margin-left: 42px; margin-top: -12px; margin-bottom: 16px;
+}
+
+/* ── CHECKLIST ── */
+.checklist {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.chk-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border-left: 3px solid #059669;
+}
+.chk-item.from-app {
+  border-left-color: #2563eb;
+  background: #eff6ff;
+}
+.chk-icon {
+  width: 20px; height: 20px;
+  border: 2px solid #059669;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: #059669;
+}
+.chk-item.from-app .chk-icon {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+.chk-text {
+  font-size: 13px; font-weight: 600; color: #334155; line-height: 1.4;
+}
+.chk-hint {
+  font-size: 11px; color: #94a3b8; font-weight: 400;
+}
+.chk-app-tag {
+  display: inline-block;
+  font-size: 9px; font-weight: 700;
+  background: #2563eb; color: #fff;
+  padding: 1px 6px; border-radius: 100px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* ── STEPS ── */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+.step-line {
+  position: absolute;
+  left: 19px; top: 32px; bottom: 32px;
+  width: 2px;
+  background: linear-gradient(to bottom, #059669, #d97706, #dc2626);
+}
+.step {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 12px 0;
+  position: relative;
+  z-index: 1;
+}
+.step-dot {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800; color: #fff;
+  flex-shrink: 0;
+}
+.step-dot.green { background: #059669; }
+.step-dot.blue { background: #2563eb; }
+.step-dot.amber { background: #d97706; }
+.step-dot.red { background: #dc2626; }
+.step-body {
+  flex: 1;
+  padding-top: 2px;
+}
+.step-name {
+  font-size: 15px; font-weight: 700; color: #0f172a;
+  margin-bottom: 2px;
+}
+.step-detail {
+  font-size: 12px; color: #64748b; line-height: 1.5;
+}
+.step-url {
+  font-size: 11px; color: #059669; font-weight: 600;
+  text-decoration: none;
+}
+
+/* ── FEE TABLE ── */
+.fee-table {
+  width: 100%; border-collapse: collapse;
+  margin-top: 12px; font-size: 13px;
+}
+.fee-table th {
+  background: #064e3b; color: #fff;
+  padding: 8px 12px; text-align: left;
+  font-weight: 700; font-size: 12px;
+}
+.fee-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.fee-table tr:nth-child(even) { background: #f8fafc; }
+.fee-table .highlight {
+  background: #ecfdf5;
+  font-weight: 700;
+  color: #059669;
+}
+
+/* ── TIPS ── */
+.tip-box {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-top: 16px;
+}
+.tip-title {
+  font-size: 13px; font-weight: 700; color: #92400e;
+  margin-bottom: 6px;
+}
+.tip-text {
+  font-size: 12px; color: #78716c; line-height: 1.7;
+}
+
+/* ── FOOTER ── */
+.ig-footer {
+  background: #0f172a;
+  color: #94a3b8;
+  padding: 20px 48px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 11px;
+}
+.ig-footer-brand {
+  display: flex; align-items: center; gap: 8px;
+}
+.ig-footer-logo {
+  width: 28px; height: 28px;
+  background: #059669;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: #fff;
+}
+
+/* ── MOBILE ── */
+@media (max-width: 840px) {
+  .infographic { width: 100%; border-radius: 0; }
+  .ig-header, .ig-section, .ig-footer { padding-left: 20px; padding-right: 20px; }
+  .checklist { grid-template-columns: 1fr; }
+  .ig-title { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<div class="download-bar">
+  <span>ตรวจสอบแล้วกด →</span>
+  <button class="btn-png" onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button>
+</div>
+
+<div class="infographic" id="infographic">
+
+  <!-- ══ HEADER ══ -->
+  <div class="ig-header">
+    <div class="ig-badge">⚖️ FairJoint v1.0 — คู่มือกฎหมาย</div>
+    <div class="ig-title">เตรียมเอกสาร &<br>ยื่นฟ้องออนไลน์ e-Filing</div>
+    <div class="ig-sub">สัญญาจ้างทำของ (ป.พ.พ. ม.587) · ศาลแพ่ง · คดีมโนสาเร่<br>หวังว่าจะไม่ต้องใช้ — แต่ถ้าจำเป็น ให้พร้อมที่สุด</div>
+  </div>
+
+  <!-- ══ SECTION 1: CHECKLIST ══ -->
+  <div class="ig-section">
+    <div class="sec-title-row">
+      <div class="sec-num">1</div>
+      <div class="sec-title">Checklist เอกสารประกอบคำฟ้อง</div>
+    </div>
+    <div class="sec-desc">เตรียมให้ครบก่อนเข้าระบบ e-Filing ทุกรายการ</div>
+
+    <div class="checklist">
+      <div class="chk-item">
+        <div class="chk-icon">☐</div>
+        <div><div class="chk-text">สำเนาบัตรประชาชน (โจทก์)</div><div class="chk-hint">สแกนหรือถ่ายภาพชัด ทั้งหน้า-หลัง</div></div>
+      </div>
+      <div class="chk-item">
+        <div class="chk-icon">☐</div>
+        <div><div class="chk-text">สำเนาทะเบียนบ้าน (โจทก์)</div><div class="chk-hint">หน้าที่มีชื่อ-ที่อยู่</div></div>
+      </div>
+      <div class="chk-item from-app">
+        <div class="chk-icon">✓</div>
+        <div><div class="chk-text">สัญญาจ้างทำของ (ต้นฉบับ) <span class="chk-app-tag">FairJoint</span></div><div class="chk-hint">PDF สัญญาหลักที่สร้างจากแอป</div></div>
+      </div>
+      <div class="chk-item from-app">
+        <div class="chk-icon">✓</div>
+        <div><div class="chk-text">ใบ Variation Order (VO) <span class="chk-app-tag">FairJoint</span></div><div class="chk-hint">ถ้ามีงานแก้ไข/เพิ่มเติมจากสัญญาหลัก</div></div>
+      </div>
+      <div class="chk-item">
+        <div class="chk-icon">☐</div>
+        <div><div class="chk-text">ใบเสนอราคา (แนบท้ายสัญญา)</div><div class="chk-hint">ฉบับที่อ้างอิงในสัญญาข้อ 1</div></div>
+      </div>
+      <div class="chk-item">
+        <div class="chk-icon">☐</div>
+        <div><div class="chk-text">หลักฐานการชำระเงินทุกงวด</div><div class="chk-hint">สลิปโอนเงิน ใบเสร็จ ทุกงวดที่จ่ายแล้ว</div></div>
+      </div>
+      <div class="chk-item from-app">
+        <div class="chk-icon">✓</div>
+        <div><div class="chk-text">ภาพถ่ายหลักฐานความเสียหาย <span class="chk-app-tag">FairJoint</span></div><div class="chk-hint">ภาพหน้างาน แชทไลน์ ที่แนบไว้ในแอป</div></div>
+      </div>
+      <div class="chk-item from-app">
+        <div class="chk-icon">✓</div>
+        <div><div class="chk-text">บันทึกอุปสรรค/หยุดงาน <span class="chk-app-tag">FairJoint</span></div><div class="chk-hint">Stoppage Log ทุกรายการพร้อมวันที่</div></div>
+      </div>
+      <div class="chk-item">
+        <div class="chk-icon">☐</div>
+        <div><div class="chk-text">หนังสือทวงถาม/บอกเลิกสัญญา</div><div class="chk-hint">ถ้าเคยส่งเป็นลายลักษณ์อักษร</div></div>
+      </div>
+      <div class="chk-item">
+        <div class="chk-icon">☐</div>
+        <div><div class="chk-text">หนังสือมอบอำนาจ (ถ้ามี)</div><div class="chk-hint">กรณีนิติบุคคลหรือมอบให้ทนายฟ้องแทน</div></div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-title">💡 เคล็ดลับ</div>
+      <div class="tip-text">
+        รายการที่มี <span class="chk-app-tag" style="background:#2563eb;">FairJoint</span> = แอปสร้างให้แล้วอัตโนมัติ ไม่ต้องเตรียมเพิ่ม<br>
+        คดีมโนสาเร่ (ทุนทรัพย์ ≤300,000 บาท) ไม่จำเป็นต้องจ้างทนายความ ฟ้องเองได้
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 2: ขั้นตอน e-Filing ══ -->
+  <div class="ig-section">
+    <div class="sec-title-row">
+      <div class="sec-num">2</div>
+      <div class="sec-title">ขั้นตอนยื่นฟ้องผ่าน e-Filing</div>
+    </div>
+    <div class="sec-desc">efiling3.coj.go.th/citizen — ระบบยื่นคำฟ้องอิเล็กทรอนิกส์สำหรับประชาชน</div>
+
+    <div class="steps">
+      <div class="step-line"></div>
+
+      <div class="step">
+        <div class="step-dot green">1</div>
+        <div class="step-body">
+          <div class="step-name">ติดตั้ง App ThaID (ไทยดี)</div>
+          <div class="step-detail">ดาวน์โหลดจาก App Store / Play Store → ยืนยันตัวตนด้วยบัตรประชาชน<br>
+          <strong>ตั้งแต่ 30 มิ.ย. 2568</strong> ใช้ ThaID แทน COJ Connect เดิม</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-dot green">2</div>
+        <div class="step-body">
+          <div class="step-name">ลงทะเบียนเข้าระบบ e-Filing</div>
+          <div class="step-detail">เข้า efiling3.coj.go.th → กดลงทะเบียน → ยืนยันตัวตนผ่าน ThaID</div>
+          <a href="https://efiling3.coj.go.th/citizen/" class="step-url" target="_blank">🔗 efiling3.coj.go.th/citizen</a>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-dot blue">3</div>
+        <div class="step-body">
+          <div class="step-name">เลือกศาลที่มีเขตอำนาจ</div>
+          <div class="step-detail">เลือกตาม<strong>ที่อยู่จำเลย</strong>หรือ<strong>สถานที่เกิดเหตุ</strong> (หน้างาน)<br>ถ้าไม่แน่ใจ → สอบถามที่ Call Center ศาลยุติธรรม 1270</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-dot blue">4</div>
+        <div class="step-body">
+          <div class="step-name">เลือกประเภทคดี → กรอกคำฟ้อง</div>
+          <div class="step-detail">
+            ประเภท: <strong>คดีแพ่ง → สัญญาจ้างทำของ</strong><br>
+            กรอก: ข้อมูลโจทก์-จำเลย / ข้อเท็จจริง / ความเสียหาย / คำขอท้ายฟ้อง
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-dot amber">5</div>
+        <div class="step-body">
+          <div class="step-name">แนบเอกสารหลักฐาน (Upload)</div>
+          <div class="step-detail">Upload PDF สัญญา + VO + สลิปโอน + ภาพหลักฐาน ทั้งหมด<br>
+          รองรับไฟล์ PDF และรูปภาพ — เตรียมตาม Checklist ด้านบน</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-dot amber">6</div>
+        <div class="step-body">
+          <div class="step-name">ชำระค่าธรรมเนียมศาล</div>
+          <div class="step-detail">ชำระออนไลน์ผ่านระบบ — ดูตารางค่าธรรมเนียมด้านล่าง</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-dot red">7</div>
+        <div class="step-body">
+          <div class="step-name">ส่งคำฟ้อง → รอศาลพิจารณารับ</div>
+          <div class="step-detail">ศาลตรวจคำฟ้อง → ออกหมายเรียก → นัดไกล่เกลี่ย/พิจารณา<br>
+          <strong>ศาลจะพยายามไกล่เกลี่ยก่อนตัดสินเสมอ</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 3: ค่าธรรมเนียม ══ -->
+  <div class="ig-section">
+    <div class="sec-title-row">
+      <div class="sec-num">3</div>
+      <div class="sec-title">ค่าธรรมเนียมศาล (คดีแพ่ง)</div>
+    </div>
+
+    <table class="fee-table">
+      <thead>
+        <tr><th>ทุนทรัพย์</th><th>ค่าธรรมเนียม</th><th>ตัวอย่าง</th><th>หมายเหตุ</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>≤ 50,000 บาท</td><td>2.5% (ขั้นต่ำ 200 บาท)</td><td>ค่าจ้าง 30,000 → ค่าฟ้อง 750 บาท</td><td>คดีมโนสาเร่</td></tr>
+        <tr><td>50,001 – 300,000 บาท</td><td>2.5%</td><td>ค่าจ้าง 200,000 → ค่าฟ้อง 5,000 บาท</td><td>คดีมโนสาเร่</td></tr>
+        <tr class="highlight"><td colspan="4">✅ คดีมโนสาเร่ (ทุนทรัพย์ ≤300,000) — ไม่จำเป็นต้องมีทนาย · ศาลไกล่เกลี่ยก่อนตัดสิน</td></tr>
+        <tr><td>> 300,000 บาท</td><td>2.5%</td><td>ค่าจ้าง 500,000 → ค่าฟ้อง 12,500 บาท</td><td>คดีสามัญ</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tip-box">
+      <div class="tip-title">⚖️ อายุความที่ต้องรู้</div>
+      <div class="tip-text">
+        • สัญญาจ้างทำของ — อายุความ <strong>2 ปี</strong> (ป.พ.พ. ม.601)<br>
+        • ความชำรุดบกพร่อง — อายุความ <strong>1 ปี</strong> นับจากพบเห็นความชำรุด (ป.พ.พ. ม.600)<br>
+        • ค่าปรับล่าช้า — ศาลมักปรับลดลง 30-50% · รวมไม่เกิน 10% ของค่าจ้าง<br>
+        • แนะนำ: <strong>ไกล่เกลี่ยก่อนฟ้อง</strong> ผ่าน mediation.coj.go.th (ฟรี ไม่ต้องจ้างทนาย)
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FOOTER ══ -->
+  <div class="ig-footer">
+    <div class="ig-footer-brand">
+      <div class="ig-footer-logo">FJ</div>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:12px;">FairJoint v1.0</div>
+        <div style="font-size:10px;">พัฒนาโดย SMG Glass & Metal</div>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div>สนับสนุนธรรมาภิบาลคู่ค้าตามเกณฑ์ ESG</div>
+      <div style="color:#059669;font-weight:600;">smg-con.co.th · LINE @smg58</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

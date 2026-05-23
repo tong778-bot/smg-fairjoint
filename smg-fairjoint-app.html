@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FairJoint v1.0 — แพลตฟอร์มบริหารงานติดตั้งและข้อตกลงกระจกอลูมิเนียม</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://unpkg.com/dexie@3.2.4/dist/dexie.min.js"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        brand: { 50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',300:'#6ee7b7',400:'#34d399',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46',900:'#064e3b' },
+        slate: { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a' }
+      }
+    }
+  }
+}
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+* { font-family: 'Sarabun', sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background: #f1f5f9; overscroll-behavior: none; }
+input, select, textarea { font-size: 16px !important; }
+.tab-active { color: #059669; border-bottom: 2px solid #059669; }
+.tab-inactive { color: #64748b; border-bottom: 2px solid transparent; }
+.card-shadow { box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06); }
+.slide-in { animation: slideIn .25s ease-out; }
+@keyframes slideIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.section-divider { height: 6px; background: #f1f5f9; margin: 0 -16px; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen pb-20">
+
+<!-- ════════════════════════════════════ -->
+<!-- HEADER -->
+<!-- ════════════════════════════════════ -->
+<header class="bg-slate-900 text-white sticky top-0 z-50">
+  <div class="flex items-center justify-between px-4 py-3">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
+        <i class="fas fa-handshake text-white text-sm"></i>
+      </div>
+      <div>
+        <div class="text-sm font-bold leading-tight">FairJoint</div>
+        <div class="text-[10px] text-slate-400 leading-tight">SMG Glass & Metal · v1.0</div>
+      </div>
+    </div>
+    <div class="text-[10px] text-slate-500 text-right leading-tight">
+      <div>ข้อมูลเก็บในเครื่องเท่านั้น</div>
+      <div class="text-brand-400">PDPA Compliant</div>
+    </div>
+  </div>
+  <!-- TAB BAR -->
+  <div class="flex border-t border-slate-700">
+    <button onclick="switchTab(0)" id="tab0" class="flex-1 py-2.5 text-xs font-semibold text-center tab-active transition-all">
+      <i class="fas fa-folder-open mr-1"></i>โครงการ
+    </button>
+    <button onclick="switchTab(1)" id="tab1" class="flex-1 py-2.5 text-xs font-semibold text-center tab-inactive transition-all">
+      <i class="fas fa-file-contract mr-1"></i>สร้างสัญญา
+    </button>
+    <button onclick="switchTab(2)" id="tab2" class="flex-1 py-2.5 text-xs font-semibold text-center tab-inactive transition-all">
+      <i class="fas fa-leaf mr-1"></i>ESG
+    </button>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════ -->
+<!-- TAB 0: DASHBOARD -->
+<!-- ════════════════════════════════════ -->
+<div id="page0" class="px-4 pt-4">
+  <!-- Search -->
+  <div class="relative mb-3">
+    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+    <input type="text" id="searchBox" placeholder="ค้นหาโครงการ..." oninput="renderProjects()" class="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+  </div>
+  <!-- Stats -->
+  <div class="grid grid-cols-3 gap-2 mb-4">
+    <div class="bg-white rounded-xl p-3 card-shadow text-center">
+      <div class="text-lg font-bold text-slate-800" id="statTotal">0</div>
+      <div class="text-[10px] text-slate-500">ทั้งหมด</div>
+    </div>
+    <div class="bg-white rounded-xl p-3 card-shadow text-center">
+      <div class="text-lg font-bold text-brand-600" id="statActive">0</div>
+      <div class="text-[10px] text-slate-500">กำลังดำเนินการ</div>
+    </div>
+    <div class="bg-white rounded-xl p-3 card-shadow text-center">
+      <div class="text-lg font-bold text-amber-600" id="statDone">0</div>
+      <div class="text-[10px] text-slate-500">เสร็จสิ้น</div>
+    </div>
+  </div>
+  <!-- Project list -->
+  <div id="projectList"></div>
+  <!-- Empty state -->
+  <div id="emptyDash" class="text-center py-12">
+    <div class="text-5xl mb-4 opacity-30"><i class="fas fa-folder-open"></i></div>
+    <div class="text-sm font-semibold text-slate-500 mb-1">ยังไม่มีโครงการ</div>
+    <div class="text-xs text-slate-400 mb-4">กดปุ่มด้านล่างเพื่อสร้างสัญญาใหม่</div>
+    <button onclick="switchTab(1)" class="bg-brand-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold">
+      <i class="fas fa-plus mr-1"></i>สร้างสัญญาใหม่
+    </button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!-- TAB 1: CONTRACT BUILDER -->
+<!-- ════════════════════════════════════ -->
+<div id="page1" class="hidden">
+
+  <!-- Progress indicator -->
+  <div class="bg-white border-b border-slate-200 px-4 py-3 sticky top-[89px] z-40">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-slate-600">ขั้นตอนการสร้างสัญญา</span>
+      <span class="text-xs text-brand-600 font-bold" id="formProgress">0%</span>
+    </div>
+    <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+      <div id="formProgressBar" class="h-full bg-brand-500 rounded-full transition-all duration-300" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="px-4 pt-4 pb-8">
+
+    <!-- ─── PARTY TYPE TOGGLE ─── -->
+    <div class="bg-white rounded-2xl card-shadow mb-4 overflow-hidden slide-in">
+      <div class="bg-slate-800 text-white px-4 py-3 flex items-center gap-2">
+        <i class="fas fa-user-check text-sm"></i>
+        <span class="text-sm font-bold">ประเภทคู่สัญญา</span>
+      </div>
+      <div class="p-4 space-y-3">
+        <label class="text-xs text-slate-500 font-semibold mb-2 block">เลือกประเภทผู้ว่าจ้างและผู้รับจ้าง (มีผลต่อภาษีหัก ณ ที่จ่าย)</label>
+        <div class="grid grid-cols-1 gap-2">
+          <label class="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 transition-all">
+            <input type="radio" name="partyType" value="pp" checked onchange="onPartyTypeChange()" class="mt-0.5 w-4 h-4 text-brand-600 focus:ring-brand-500">
+            <div>
+              <div class="text-sm font-semibold">บุคคล ↔ บุคคล</div>
+              <div class="text-[10px] text-slate-500">ไม่ต้องหักภาษี ณ ที่จ่าย</div>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 transition-all">
+            <input type="radio" name="partyType" value="cp" onchange="onPartyTypeChange()" class="mt-0.5 w-4 h-4 text-amber-600 focus:ring-amber-500">
+            <div>
+              <div class="text-sm font-semibold">นิติบุคคล ↔ บุคคล</div>
+              <div class="text-[10px] text-slate-500">ผู้ว่าจ้าง (นิติบุคคล) หักภาษี ณ ที่จ่าย 3% จ้างทำของ</div>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 transition-all">
+            <input type="radio" name="partyType" value="cc" onchange="onPartyTypeChange()" class="mt-0.5 w-4 h-4 text-blue-600 focus:ring-blue-500">
+            <div>
+              <div class="text-sm font-semibold">นิติบุคคล ↔ นิติบุคคล</div>
+              <div class="text-[10px] text-slate-500">หักภาษี ณ ที่จ่าย 3% จ้างทำของ ทั้งสองฝ่าย</div>
+            </div>
+          </label>
+        </div>
+        <!-- Tax info -->
+        <div id="taxInfo" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <i class="fas fa-receipt text-amber-600 text-xs"></i>
+            <span class="text-xs font-bold text-amber-800">ภาษีหัก ณ ที่จ่าย 3% (จ้างทำของ)</span>
+          </div>
+          <div class="text-xs text-amber-700 leading-relaxed">
+            ตาม ป. รัษฎากร มาตรา 3 เตรส — ผู้จ่ายเงินค่าจ้างทำของให้แก่ผู้รับจ้างต้องหักภาษี ณ ที่จ่าย 3% ในแต่ละงวดที่จ่าย พร้อมออกหนังสือรับรองการหักภาษี (50 ทวิ) และนำส่ง สรรพากร ภายในวันที่ 7 ของเดือนถัดไป
+          </div>
+        </div>
+        <!-- VAT checkbox -->
+        <div id="vatSection" class="hidden">
+          <label class="flex items-start gap-3 p-3 bg-purple-50 border border-purple-200 rounded-xl cursor-pointer">
+            <input type="checkbox" id="c_useVAT" onchange="renderInstallments()" class="mt-0.5 w-4 h-4 text-purple-600 rounded focus:ring-purple-500">
+            <div>
+              <div class="text-sm font-semibold text-purple-800">รวม VAT 7% ในค่าจ้าง</div>
+              <div class="text-xs text-purple-600 mt-0.5">สำหรับนิติบุคคลจดทะเบียนภาษีมูลค่าเพิ่ม — ระบุยอดก่อน VAT ในช่องค่าจ้างรวม ระบบจะคำนวณ VAT ให้</div>
+            </div>
+          </label>
+        </div>
+        <!-- Stamp duty info -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <i class="fas fa-stamp text-slate-600 text-xs"></i>
+            <span class="text-xs font-bold text-slate-700">อากรแสตมป์ (สัญญาจ้างทำของ)</span>
+          </div>
+          <div class="text-xs text-slate-600 leading-relaxed">
+            อัตรา <strong>1 บาท ต่อทุก 1,000 บาท</strong> หรือเศษของ 1,000 บาท ของค่าจ้าง<br>
+            ค่าอากรแสตมป์: <strong id="stampDutyPreview">—</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 1: คู่สัญญา ─── -->
+    <div class="bg-white rounded-2xl card-shadow mb-4 overflow-hidden slide-in">
+      <div class="bg-brand-600 text-white px-4 py-3 flex items-center gap-2">
+        <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-xs font-bold">1</div>
+        <span class="text-sm font-bold">ข้อมูลคู่สัญญา</span>
+      </div>
+
+      <!-- ผู้ว่าจ้าง -->
+      <div class="p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <i class="fas fa-user-tie text-brand-600 text-sm"></i>
+          <span class="text-sm font-bold text-slate-700">ผู้ว่าจ้าง (เจ้าของบ้าน/โครงการ)</span>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-slate-500 font-semibold mb-1 block">ชื่อ-นามสกุล <span class="text-red-400">*</span></label>
+            <input type="text" id="c_clientName" placeholder="นาย/นาง/นางสาว..." oninput="updateProgress()" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-500 font-semibold mb-1 block">เลขบัตรประชาชน</label>
+              <input type="text" id="c_clientID" maxlength="20" placeholder="x-xxxx-xxxxx-xx-x" oninput="updateProgress()" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+            <div>
+              <label class="text-xs text-slate-500 font-semibold mb-1 block">เบอร์โทร <span class="text-red-400">*</span></label>
+              <input type="tel" id="c_clientPhone" placeholder="08x-xxx-xxxx" oninput="updateProgress()" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 font-semibold mb-1 block">ที่อยู่หน้างาน <span class="text-red-400">*</span></label>
+            <textarea id="c_clientAddr" rows="2" placeholder="เลขที่... ซอย... ถนน... แขวง/ตำบล... เขต/อำเภอ... จังหวัด..." oninput="updateProgress()" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- ผู้รับจ้าง -->
+      <div class="p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <i class="fas fa-hard-hat text-amber-600 text-sm"></i>
+          <span class="text-sm font-bold text-slate-700">ผู้รับจ้าง (ช่าง/ร้าน)</span>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-slate-500 font-semibold mb-1 block">ชื่อ-นามสกุล หรือชื่อร้าน <span class="text-red-400">*</span></label>
+            <input type="text" id="c_contractorName" placeholder="ชื่อช่าง/ร้าน..." oninput="updateProgress()" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-500 font-semibold mb-1 block">เลขบัตร/นิติบุคคล</label>
+              <input type="text" id="c_contractorID" maxlength="20" placeholder="x-xxxx-xxxxx-xx-x" oninput="updateProgress()" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+            <div>
+              <label class="text-xs text-slate-500 font-semibold mb-1 block">เบอร์โทร <span class="text-red-400">*</span></label>
+              <input type="tel" id="c_contractorPhone" placeholder="08x-xxx-xxxx" oninput="updateProgress()" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 font-semibold mb-1 block">ที่อยู่ร้าน/สำนักงาน</label>
+            <textarea id="c_contractorAddr" rows="2" placeholder="ที่อยู่ร้าน..." oninput="updateProgress()" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 2: ขอบเขตงาน ─── -->
+    <div class="bg-white rounded-2xl card-shadow mb-4 overflow-hidden slide-in">
+      <div class="bg-slate-700 text-white px-4 py-3 flex items-center gap-2">
+        <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-xs font-bold">2</div>
+        <span class="text-sm font-bold">ขอบเขตงานและสเปกวัสดุ</span>
+      </div>
+      <div class="p-4 space-y-3">
+        <!-- Toggle: อ้างอิงใบเสนอราคา -->
+        <label class="flex items-start gap-3 p-3 bg-brand-50 border border-brand-200 rounded-xl cursor-pointer">
+          <input type="checkbox" id="c_useQuote" onchange="toggleQuoteMode()" class="mt-0.5 w-4 h-4 text-brand-600 rounded focus:ring-brand-500">
+          <div>
+            <div class="text-sm font-semibold text-brand-800">อ้างอิงเอกสารใบเสนอราคาแนบท้าย</div>
+            <div class="text-xs text-brand-600 mt-0.5">ลดการพิมพ์งานที่ซับซ้อนหลายบาน — กรอกแค่เลขที่ใบเสนอราคา</div>
+          </div>
+        </label>
+
+        <!-- Mode A: อ้างอิงใบเสนอราคา -->
+        <div id="quoteMode" class="hidden space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-500 font-semibold mb-1 block">เลขที่ใบเสนอราคา</label>
+              <input type="text" id="c_quoteNo" placeholder="QT-2569-001" oninput="updateProgress()" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+            <div>
+              <label class="text-xs text-slate-500 font-semibold mb-1 block">ลงวันที่</label>
+              <input type="date" id="c_quoteDate" oninput="updateProgress()" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- Mode B: กรอกสเปกตรง -->
+        <div id="specMode" class="space-y-3">
+          <div>
+            <label class="text-xs text-slate-500 font-semibold mb-1 block">รายละเอียดขอบเขตงานและสเปกวัสดุ <span class="text-red-400">*</span></label>
+            <textarea id="c_specText" rows="5" placeholder="เช่น:&#10;- ติดตั้งหน้าต่างบานเลื่อน อลูมิเนียมสีดำ ขนาด 1.5x1.2m จำนวน 4 ชุด&#10;- กระจก Lam 6mm สีชา&#10;- รวมซิลิโคนและอุปกรณ์ทั้งหมด" oninput="updateProgress()" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"></textarea>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs text-slate-500 font-semibold mb-1 block">กำหนดแล้วเสร็จ (วัน) <span class="text-red-400">*</span></label>
+          <div class="flex items-center gap-2">
+            <input type="number" id="c_duration" placeholder="30" min="1" max="365" oninput="updateProgress()" class="w-24 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <span class="text-sm text-slate-500">วัน นับจากวันลงนาม</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 3: งวดจ่ายเงิน ─── -->
+    <div class="bg-white rounded-2xl card-shadow mb-4 overflow-hidden slide-in">
+      <div class="bg-amber-600 text-white px-4 py-3 flex items-center gap-2">
+        <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-xs font-bold">3</div>
+        <span class="text-sm font-bold">งวดจ่ายเงินและการเบิกจ่าย</span>
+      </div>
+      <div class="p-4 space-y-4">
+        <div>
+          <label class="text-xs text-slate-500 font-semibold mb-1 block">ยอดเงินค่าจ้างรวม (บาท) <span class="text-red-400">*</span></label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">฿</span>
+            <input type="number" id="c_totalAmount" placeholder="0" min="0" oninput="recalcInstallments()" class="w-full pl-8 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500">
+          </div>
+        </div>
+
+        <!-- คำแนะนำ -->
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <i class="fas fa-balance-scale text-amber-600 text-xs"></i>
+            <span class="text-xs font-bold text-amber-800">คำแนะนำมาตรฐานศาลแพ่ง</span>
+          </div>
+          <ul class="text-xs text-amber-700 space-y-1 ml-5 list-disc">
+            <li>งวดมัดจำไม่ควรเกิน <strong>30%</strong> ของยอดรวม</li>
+            <li>งวดสุดท้ายควรเหลือ <strong>10-20%</strong> เพื่อกันการทิ้งงานและเทสระบบน้ำรั่วซึม</li>
+            <li>ควรแบ่งงวดอย่างน้อย <strong>3 งวด</strong> ขึ้นไปเพื่อความเป็นธรรม</li>
+          </ul>
+        </div>
+
+        <!-- Installments -->
+        <div id="installmentList" class="space-y-2"></div>
+
+        <button onclick="addInstallment()" class="w-full border-2 border-dashed border-slate-300 text-slate-500 rounded-xl py-2.5 text-sm font-semibold hover:border-brand-500 hover:text-brand-600 transition-colors">
+          <i class="fas fa-plus mr-1"></i>เพิ่มงวดงาน
+        </button>
+
+        <!-- Total check -->
+        <div id="installmentSummary" class="bg-slate-50 border border-slate-200 rounded-xl p-3 hidden">
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-slate-600 font-semibold">รวมทุกงวด:</span>
+            <span class="text-sm font-bold" id="installmentTotal">0%</span>
+          </div>
+          <div id="installmentWarn" class="hidden mt-1">
+            <span class="text-xs text-red-500 font-semibold"><i class="fas fa-exclamation-triangle mr-1"></i>รวมทุกงวดต้องเท่ากับ 100%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 4: การรับประกัน ─── -->
+    <div class="bg-white rounded-2xl card-shadow mb-6 overflow-hidden slide-in">
+      <div class="bg-blue-700 text-white px-4 py-3 flex items-center gap-2">
+        <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-xs font-bold">4</div>
+        <span class="text-sm font-bold">การรับประกันผลงาน</span>
+      </div>
+      <div class="p-4 space-y-4">
+        <!-- ระยะประกัน -->
+        <div>
+          <label class="text-xs text-slate-500 font-semibold mb-2 block">ระยะเวลาประกันผลงานชำรุด</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 p-3 border border-slate-200 rounded-xl cursor-pointer has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+              <input type="radio" name="warranty" value="1" checked class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+              <div>
+                <div class="text-sm font-semibold">1 ปี</div>
+                <div class="text-[10px] text-slate-500">มาตรฐานทั่วไป</div>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 p-3 border border-slate-200 rounded-xl cursor-pointer has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+              <input type="radio" name="warranty" value="2" class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+              <div>
+                <div class="text-sm font-semibold">2 ปี</div>
+                <div class="text-[10px] text-slate-500">ตามกฎหมายแพ่ง</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Warranty Retention -->
+        <label class="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl cursor-pointer">
+          <input type="checkbox" id="c_retention" class="mt-0.5 w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <div>
+            <div class="text-sm font-semibold text-blue-800">หักเงินประกันผลงาน (Warranty Retention) 5%</div>
+            <div class="text-xs text-blue-600 mt-0.5">หักจากงวดสุดท้าย เพื่อเป็นหลักประกันคุณภาพ — คืนเมื่อครบกำหนดประกัน</div>
+          </div>
+        </label>
+
+        <!-- ข้อยกเว้นที่เป็นธรรม -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="fas fa-shield-alt text-blue-600 text-xs"></i>
+            <span class="text-xs font-bold text-slate-700">ข้อยกเว้นการรับประกัน (เป็นธรรมต่อช่าง)</span>
+          </div>
+          <ul class="text-xs text-slate-600 space-y-1.5 ml-5 list-disc leading-relaxed">
+            <li>กระจกเทมเปอร์แตกเองจากแรงเค้นบิดตัวของโครงสร้างปูน (Nickel Sulfide / Structural Movement)</li>
+            <li>ผู้ว่าจ้างใช้น้ำยาเคมี/กรดเช็ดกระจกจนซิลิโคนเสื่อมสภาพ</li>
+            <li>ความเสียหายจากภัยธรรมชาติ แผ่นดินไหว น้ำท่วม</li>
+            <li>การดัดแปลง/เจาะ/ตัดงานที่ติดตั้งแล้วโดยบุคคลที่สาม</li>
+            <li>น้ำรั่วซึมจากระบบกันซึมส่วนกลางคอนโด (ไม่ใช่ความผิดช่างติดตั้ง)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SUBMIT ─── -->
+    <button onclick="saveContract()" id="btnSave" class="w-full bg-brand-600 text-white py-4 rounded-2xl text-base font-bold card-shadow hover:bg-brand-700 active:scale-[.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+      <i class="fas fa-file-signature mr-2"></i>บันทึกและสร้างเอกสาร PDF
+    </button>
+    <p class="text-center text-xs text-slate-400 mt-3 mb-6">
+      <i class="fas fa-lock mr-1"></i>ข้อมูลจะถูกบันทึกลงในเครื่องของคุณเท่านั้น ไม่ส่งขึ้นเซิร์ฟเวอร์ใดๆ
+    </p>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!-- TAB 2: ESG KNOWLEDGE -->
+<!-- ════════════════════════════════════ -->
+<div id="page2" class="hidden px-4 pt-4 pb-8">
+  <div class="text-center mb-6">
+    <div class="w-14 h-14 bg-brand-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+      <i class="fas fa-leaf text-brand-600 text-xl"></i>
+    </div>
+    <h2 class="text-lg font-bold text-slate-800">จรรยาบรรณคู่ค้า SMG</h2>
+    <p class="text-xs text-slate-500 mt-1">ESG Framework สำหรับห่วงโซ่อุปทานกระจก-อลูมิเนียม</p>
+  </div>
+
+  <!-- E -->
+  <div class="bg-white rounded-2xl card-shadow mb-3 overflow-hidden">
+    <div class="bg-green-600 text-white px-4 py-3 flex items-center gap-3">
+      <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center"><i class="fas fa-globe-asia text-sm"></i></div>
+      <div>
+        <div class="text-sm font-bold">E — Environment</div>
+        <div class="text-[10px] opacity-80">สิ่งแวดล้อม</div>
+      </div>
+    </div>
+    <div class="p-4">
+      <ul class="text-sm text-slate-700 space-y-2 leading-relaxed">
+        <li class="flex gap-2"><i class="fas fa-check-circle text-green-500 mt-1 text-xs"></i><span><strong>Paperless Contract</strong> — ลดการใช้กระดาษด้วยสัญญาดิจิทัล สามารถพิมพ์ออกเป็นกระดาษเมื่อต้องใช้เท่านั้น</span></li>
+        <li class="flex gap-2"><i class="fas fa-check-circle text-green-500 mt-1 text-xs"></i><span><strong>ลดของเสียจากการเปลี่ยนสเปก</strong> — ขอบเขตงานชัดเจน ลดการสั่งวัสดุผิดและการทิ้งเศษวัสดุ</span></li>
+        <li class="flex gap-2"><i class="fas fa-check-circle text-green-500 mt-1 text-xs"></i><span><strong>ส่งเสริมกระจกประหยัดพลังงาน</strong> — สเปกวัสดุที่สอดคล้องกับมาตรฐาน Thai BEC</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- S -->
+  <div class="bg-white rounded-2xl card-shadow mb-3 overflow-hidden">
+    <div class="bg-blue-600 text-white px-4 py-3 flex items-center gap-3">
+      <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center"><i class="fas fa-users text-sm"></i></div>
+      <div>
+        <div class="text-sm font-bold">S — Social</div>
+        <div class="text-[10px] opacity-80">สังคม · คู่ค้าที่เป็นธรรม</div>
+      </div>
+    </div>
+    <div class="p-4">
+      <ul class="text-sm text-slate-700 space-y-2 leading-relaxed">
+        <li class="flex gap-2"><i class="fas fa-check-circle text-blue-500 mt-1 text-xs"></i><span><strong>สัญญาที่เป็นธรรมสองทาง</strong> — ทั้งเจ้าของบ้านและช่างได้รับการคุ้มครองอย่างเท่าเทียม</span></li>
+        <li class="flex gap-2"><i class="fas fa-check-circle text-blue-500 mt-1 text-xs"></i><span><strong>งวดจ่ายเงินมาตรฐาน</strong> — ป้องกันการจ่ายมัดจำเกินสัดส่วนที่ไม่สมเหตุสมผล</span></li>
+        <li class="flex gap-2"><i class="fas fa-check-circle text-blue-500 mt-1 text-xs"></i><span><strong>ข้อยกเว้นที่เป็นธรรมต่อช่าง</strong> — ไม่โทษช่างกรณีกระจกแตกจากโครงสร้างหรือสารเคมี</span></li>
+        <li class="flex gap-2"><i class="fas fa-check-circle text-blue-500 mt-1 text-xs"></i><span><strong>ไกล่เกลี่ยก่อนฟ้อง</strong> — ส่งเสริมการแก้ปัญหาด้วยสันติวิธีผ่านระบบศาล</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- G -->
+  <div class="bg-white rounded-2xl card-shadow mb-3 overflow-hidden">
+    <div class="bg-amber-500 text-white px-4 py-3 flex items-center gap-3">
+      <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center"><i class="fas fa-gavel text-sm"></i></div>
+      <div>
+        <div class="text-sm font-bold">G — Governance</div>
+        <div class="text-[10px] opacity-80">ธรรมาภิบาล</div>
+      </div>
+    </div>
+    <div class="p-4">
+      <ul class="text-sm text-slate-700 space-y-2 leading-relaxed">
+        <li class="flex gap-2"><i class="fas fa-check-circle text-amber-500 mt-1 text-xs"></i><span><strong>PDPA Compliant</strong> — ข้อมูลส่วนบุคคลเก็บในเครื่องผู้ใช้เท่านั้น (Local-First) ไม่ส่งขึ้นเซิร์ฟเวอร์</span></li>
+        <li class="flex gap-2"><i class="fas fa-check-circle text-amber-500 mt-1 text-xs"></i><span><strong>เอกสารสารบรรณ</strong> — PDF สัญญาเป็นภาษาไทย ถูกต้องตามหลักสารบรรณ ใช้อ้างอิงทางกฎหมายได้</span></li>
+        <li class="flex gap-2"><i class="fas fa-check-circle text-amber-500 mt-1 text-xs"></i><span><strong>Audit Trail</strong> — บันทึก VO และอุปสรรคทุกรายการพร้อมวันที่ ใช้เป็นหลักฐานได้</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="text-center text-xs text-slate-400 mt-6">
+    <i class="fas fa-handshake mr-1"></i>FairJoint v1.0 · พัฒนาโดย SMG Glass & Metal<br>
+    สนับสนุนธรรมาภิบาลคู่ค้าและความเป็นธรรมในห่วงโซ่อุปทาน
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!-- PROJECT DETAIL (Hidden by default) -->
+<!-- ════════════════════════════════════ -->
+<div id="pageDetail" class="hidden px-4 pt-4 pb-8">
+  <button onclick="closeDetail()" class="flex items-center gap-2 text-sm text-brand-600 font-semibold mb-4">
+    <i class="fas fa-arrow-left"></i>กลับหน้าโครงการ
+  </button>
+  <div id="detailContent"></div>
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!-- TOAST -->
+<!-- ════════════════════════════════════ -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-xl text-sm font-semibold shadow-lg z-50 transition-all duration-300 opacity-0 translate-y-4 pointer-events-none">
+  <i class="fas fa-check-circle text-brand-400 mr-2"></i><span id="toastMsg"></span>
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!-- JAVASCRIPT -->
+<!-- ════════════════════════════════════ -->
+<script>
+// ══════════════════════════════════════
+// DATABASE (Dexie.js + IndexedDB)
+// ══════════════════════════════════════
+var db = new Dexie('FairJointDB');
+db.version(1).stores({
+  projects: '++id, clientName, contractorName, status, createdAt',
+  installments: '++id, projectId, seq, label, percent, amount, paid',
+  variations: '++id, projectId, description, amount, extraDays, createdAt',
+  stoppages: '++id, projectId, reason, days, createdAt',
+  evidence: '++id, projectId, type, data, note, createdAt'
+});
+
+// ══════════════════════════════════════
+// TAB NAVIGATION
+// ══════════════════════════════════════
+var currentTab = 0;
+function switchTab(n) {
+  currentTab = n;
+  for (var i = 0; i < 3; i++) {
+    document.getElementById('page' + i).classList.toggle('hidden', i !== n);
+    document.getElementById('tab' + i).className = (i === n) ? 'flex-1 py-2.5 text-xs font-semibold text-center tab-active transition-all' : 'flex-1 py-2.5 text-xs font-semibold text-center tab-inactive transition-all';
+  }
+  document.getElementById('pageDetail').classList.add('hidden');
+  if (n === 0) renderProjects();
+}
+
+// ══════════════════════════════════════
+// QUOTE MODE TOGGLE
+// ══════════════════════════════════════
+function toggleQuoteMode() {
+  var useQuote = document.getElementById('c_useQuote').checked;
+  document.getElementById('quoteMode').classList.toggle('hidden', !useQuote);
+  document.getElementById('specMode').classList.toggle('hidden', useQuote);
+  updateProgress();
+}
+
+// ══════════════════════════════════════
+// INSTALLMENTS (งวดเงิน)
+// ══════════════════════════════════════
+var installments = [];
+
+function initInstallments() {
+  installments = [
+    { label: 'งวดที่ 1 — มัดจำเมื่อลงนามสัญญา', percent: 30 },
+    { label: 'งวดที่ 2 — เมื่อติดตั้งโครงเฟรมเสร็จ', percent: 40 },
+    { label: 'งวดที่ 3 — เมื่องานแล้วเสร็จและเทสน้ำ', percent: 30 }
+  ];
+  renderInstallments();
+}
+
+function addInstallment() {
+  var n = installments.length + 1;
+  installments.push({ label: 'งวดที่ ' + n + ' — ', percent: 0 });
+  renderInstallments();
+}
+
+function removeInstallment(idx) {
+  if (installments.length <= 2) {
+    showToast('ต้องมีอย่างน้อย 2 งวด');
+    return;
+  }
+  installments.splice(idx, 1);
+  for (var i = 0; i < installments.length; i++) {
+    var old = installments[i].label;
+    installments[i].label = old.replace(/งวดที่ \d+/, 'งวดที่ ' + (i + 1));
+  }
+  renderInstallments();
+}
+
+function getPartyType() {
+  var el = document.querySelector('input[name="partyType"]:checked');
+  return el ? el.value : 'pp';
+}
+
+function isWHTApplicable() {
+  var pt = getPartyType();
+  return pt === 'cp' || pt === 'cc';
+}
+
+function onPartyTypeChange() {
+  var wht = isWHTApplicable();
+  var pt = getPartyType();
+  document.getElementById('taxInfo').classList.toggle('hidden', !wht);
+  var vatSec = document.getElementById('vatSection');
+  if (vatSec) vatSec.classList.toggle('hidden', pt !== 'cc' && pt !== 'cp');
+  renderInstallments();
+  updateStampDuty();
+}
+
+function updateStampDuty() {
+  var total = parseFloat(document.getElementById('c_totalAmount').value) || 0;
+  var duty = Math.ceil(total / 1000);
+  var el = document.getElementById('stampDutyPreview');
+  if (el) el.textContent = total > 0 ? formatNum(duty) + ' บาท (ปิดบนสัญญาต้นฉบับ)' : '—';
+}
+
+function renderInstallments() {
+  var total = parseFloat(document.getElementById('c_totalAmount').value) || 0;
+  var wht = isWHTApplicable();
+  var useVAT = document.getElementById('c_useVAT') ? document.getElementById('c_useVAT').checked : false;
+  var html = '';
+  for (var i = 0; i < installments.length; i++) {
+    var inst = installments[i];
+    var amt = total > 0 ? (total * inst.percent / 100) : 0;
+    var tax3 = wht ? Math.round(amt * 0.03 * 100) / 100 : 0;
+    var vat7 = useVAT ? Math.round(amt * 0.07 * 100) / 100 : 0;
+    var netPay = amt - tax3 + vat7;
+    var warnClass = '';
+    if (i === 0 && inst.percent > 30) warnClass = 'border-red-300 bg-red-50';
+    html += '<div class="border border-slate-200 rounded-xl p-3 ' + warnClass + '">';
+    html += '<div class="flex items-center justify-between mb-2">';
+    html += '<input type="text" value="' + inst.label + '" onchange="installments[' + i + '].label=this.value" class="text-sm font-semibold text-slate-700 bg-transparent border-none outline-none flex-1 mr-2">';
+    html += '<button onclick="removeInstallment(' + i + ')" class="text-slate-400 hover:text-red-500 text-xs"><i class="fas fa-times"></i></button>';
+    html += '</div>';
+    html += '<div class="flex items-center gap-2">';
+    html += '<input type="number" value="' + inst.percent + '" min="0" max="100" onchange="installments[' + i + '].percent=parseFloat(this.value)||0;recalcInstallments()" class="w-16 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:outline-none focus:ring-2 focus:ring-brand-500">';
+    html += '<span class="text-xs text-slate-500">%</span>';
+    html += '<span class="text-xs text-slate-400 mx-1">=</span>';
+    html += '<span class="text-sm font-bold text-brand-700">' + formatNum(amt) + ' บาท</span>';
+    html += '</div>';
+    if ((wht || useVAT) && amt > 0) {
+      var cols = 2;
+      if (wht && useVAT) cols = 4;
+      else if (wht || useVAT) cols = 3;
+      html += '<div class="mt-2 bg-amber-50 rounded-lg p-2 grid grid-cols-' + cols + ' gap-1 text-center">';
+      html += '<div><div class="text-[9px] text-slate-500">ค่าจ้างก่อนVAT</div><div class="text-xs font-bold text-slate-700">' + formatNum(amt) + '</div></div>';
+      if (wht) {
+        html += '<div><div class="text-[9px] text-red-500">หัก 3%</div><div class="text-xs font-bold text-red-600">-' + formatNum(tax3) + '</div></div>';
+      }
+      if (useVAT) {
+        html += '<div><div class="text-[9px] text-purple-600">+VAT 7%</div><div class="text-xs font-bold text-purple-700">+' + formatNum(vat7) + '</div></div>';
+      }
+      html += '<div><div class="text-[9px] text-brand-600">จ่ายจริง</div><div class="text-xs font-bold text-brand-700">' + formatNum(netPay) + '</div></div>';
+      html += '</div>';
+    }
+    if (i === 0 && inst.percent > 30) {
+      html += '<div class="mt-2 text-xs text-red-500 font-semibold"><i class="fas fa-exclamation-triangle mr-1"></i>มัดจำเกิน 30% — อาจไม่เป็นธรรมตามมาตรฐานศาล</div>';
+    }
+    html += '</div>';
+  }
+  document.getElementById('installmentList').innerHTML = html;
+  recalcSummary();
+  updateStampDuty();
+}
+
+function recalcInstallments() {
+  renderInstallments();
+  updateProgress();
+}
+
+function recalcSummary() {
+  var totalPct = 0;
+  for (var i = 0; i < installments.length; i++) totalPct += installments[i].percent;
+  var sumEl = document.getElementById('installmentSummary');
+  var totEl = document.getElementById('installmentTotal');
+  var warnEl = document.getElementById('installmentWarn');
+  if (installments.length > 0) {
+    sumEl.classList.remove('hidden');
+    totEl.textContent = totalPct + '%';
+    totEl.className = totalPct === 100 ? 'text-sm font-bold text-brand-600' : 'text-sm font-bold text-red-500';
+    warnEl.classList.toggle('hidden', totalPct === 100);
+  }
+}
+
+// ══════════════════════════════════════
+// PROGRESS BAR
+// ══════════════════════════════════════
+function updateProgress() {
+  var fields = [
+    document.getElementById('c_clientName').value.trim(),
+    document.getElementById('c_clientPhone').value.trim(),
+    document.getElementById('c_clientAddr').value.trim(),
+    document.getElementById('c_contractorName').value.trim(),
+    document.getElementById('c_contractorPhone').value.trim(),
+    document.getElementById('c_duration').value.trim(),
+    document.getElementById('c_totalAmount').value.trim()
+  ];
+  var useQuote = document.getElementById('c_useQuote').checked;
+  if (useQuote) {
+    fields.push(document.getElementById('c_quoteNo').value.trim());
+  } else {
+    fields.push(document.getElementById('c_specText').value.trim());
+  }
+  var filled = 0;
+  for (var i = 0; i < fields.length; i++) {
+    if (fields[i].length > 0) filled++;
+  }
+  var pct = Math.round(filled / fields.length * 100);
+  document.getElementById('formProgress').textContent = pct + '%';
+  document.getElementById('formProgressBar').style.width = pct + '%';
+  document.getElementById('btnSave').disabled = (pct < 75);
+}
+
+// ══════════════════════════════════════
+// SAVE CONTRACT
+// ══════════════════════════════════════
+async function saveContract() {
+  var totalPct = 0;
+  for (var i = 0; i < installments.length; i++) totalPct += installments[i].percent;
+  if (totalPct !== 100) {
+    showToast('รวมงวดเงินต้องเท่ากับ 100%');
+    return;
+  }
+
+  var warrantyYears = document.querySelector('input[name="warranty"]:checked').value;
+  var useRetention = document.getElementById('c_retention').checked;
+  var useQuote = document.getElementById('c_useQuote').checked;
+  var totalAmount = parseFloat(document.getElementById('c_totalAmount').value) || 0;
+  var partyType = getPartyType();
+  var useVAT = document.getElementById('c_useVAT') ? document.getElementById('c_useVAT').checked : false;
+  var vatAmount = useVAT ? Math.round(totalAmount * 0.07 * 100) / 100 : 0;
+  var grandTotal = totalAmount + vatAmount;
+  var stampDuty = Math.ceil(grandTotal / 1000);
+
+  var project = {
+    clientName: document.getElementById('c_clientName').value.trim(),
+    clientID: document.getElementById('c_clientID').value.trim(),
+    clientPhone: document.getElementById('c_clientPhone').value.trim(),
+    clientAddr: document.getElementById('c_clientAddr').value.trim(),
+    contractorName: document.getElementById('c_contractorName').value.trim(),
+    contractorID: document.getElementById('c_contractorID').value.trim(),
+    contractorPhone: document.getElementById('c_contractorPhone').value.trim(),
+    contractorAddr: document.getElementById('c_contractorAddr').value.trim(),
+    useQuote: useQuote,
+    quoteNo: useQuote ? document.getElementById('c_quoteNo').value.trim() : '',
+    quoteDate: useQuote ? document.getElementById('c_quoteDate').value : '',
+    specText: useQuote ? '' : document.getElementById('c_specText').value.trim(),
+    duration: parseInt(document.getElementById('c_duration').value) || 30,
+    totalAmount: totalAmount,
+    useVAT: useVAT,
+    vatAmount: vatAmount,
+    grandTotal: grandTotal,
+    warrantyYears: parseInt(warrantyYears),
+    useRetention: useRetention,
+    partyType: partyType,
+    stampDuty: stampDuty,
+    status: 'active',
+    createdAt: new Date().toISOString()
+  };
+
+  try {
+    var projId;
+    if (editingProjectId) {
+      // Edit mode — update existing
+      var oldProj = await db.projects.get(editingProjectId);
+      project.createdAt = oldProj ? oldProj.createdAt : project.createdAt;
+      await db.projects.update(editingProjectId, project);
+      await db.installments.where('projectId').equals(editingProjectId).delete();
+      projId = editingProjectId;
+      editingProjectId = null;
+    } else {
+      // New project
+      projId = await db.projects.add(project);
+    }
+    for (var i = 0; i < installments.length; i++) {
+      await db.installments.add({
+        projectId: projId,
+        seq: i + 1,
+        label: installments[i].label,
+        percent: installments[i].percent,
+        amount: grandTotal * installments[i].percent / 100,
+        paid: false
+      });
+    }
+    showToast('บันทึกสำเร็จ — กำลังสร้าง PDF...');
+    setTimeout(function() { generateContractPDF(projId); }, 500);
+    resetForm();
+    switchTab(0);
+  } catch (err) {
+    showToast('เกิดข้อผิดพลาด: ' + err.message);
+  }
+}
+
+function resetForm() {
+  editingProjectId = null;
+  var ids = ['c_clientName','c_clientID','c_clientPhone','c_clientAddr','c_contractorName','c_contractorID','c_contractorPhone','c_contractorAddr','c_quoteNo','c_quoteDate','c_specText','c_duration','c_totalAmount'];
+  for (var i = 0; i < ids.length; i++) {
+    document.getElementById(ids[i]).value = '';
+  }
+  document.getElementById('c_useQuote').checked = false;
+  document.getElementById('c_retention').checked = false;
+  if (document.getElementById('c_useVAT')) document.getElementById('c_useVAT').checked = false;
+  var ppRadio = document.querySelector('input[name="partyType"][value="pp"]');
+  if (ppRadio) ppRadio.checked = true;
+  onPartyTypeChange();
+  toggleQuoteMode();
+  initInstallments();
+  updateProgress();
+  document.getElementById('btnSave').innerHTML = '<i class="fas fa-file-signature mr-2"></i>บันทึกและสร้างเอกสาร PDF';
+}
+
+// ══════════════════════════════════════
+// RENDER PROJECTS (Dashboard)
+// ══════════════════════════════════════
+async function renderProjects() {
+  var search = (document.getElementById('searchBox').value || '').toLowerCase();
+  var all = await db.projects.reverse().toArray();
+  var filtered = all.filter(function(p) {
+    if (!search) return true;
+    return (p.clientName + p.contractorName).toLowerCase().indexOf(search) >= 0;
+  });
+
+  var active = all.filter(function(p) { return p.status === 'active'; }).length;
+  var done = all.filter(function(p) { return p.status === 'done'; }).length;
+  document.getElementById('statTotal').textContent = all.length;
+  document.getElementById('statActive').textContent = active;
+  document.getElementById('statDone').textContent = done;
+
+  if (filtered.length === 0) {
+    document.getElementById('projectList').innerHTML = '';
+    document.getElementById('emptyDash').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('emptyDash').classList.add('hidden');
+
+  var html = '';
+  for (var i = 0; i < filtered.length; i++) {
+    var p = filtered[i];
+    var dt = new Date(p.createdAt);
+    var dateStr = dt.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit' });
+    var statusBg = p.status === 'active' ? 'bg-brand-100 text-brand-700' : 'bg-amber-100 text-amber-700';
+    var statusTxt = p.status === 'active' ? 'กำลังดำเนินการ' : 'เสร็จสิ้น';
+
+    html += '<div onclick="openDetail(' + p.id + ')" class="bg-white rounded-xl card-shadow p-4 mb-2 active:bg-slate-50 cursor-pointer transition-colors">';
+    html += '<div class="flex items-start justify-between">';
+    html += '<div class="flex-1 min-w-0">';
+    html += '<div class="text-sm font-bold text-slate-800 truncate">' + escHTML(p.clientName) + '</div>';
+    html += '<div class="text-xs text-slate-500 mt-0.5 truncate"><i class="fas fa-hard-hat mr-1 text-amber-500"></i>' + escHTML(p.contractorName) + '</div>';
+    html += '</div>';
+    html += '<div class="text-right ml-3 flex-shrink-0">';
+    html += '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ' + statusBg + '">' + statusTxt + '</span>';
+    html += '<div class="text-[10px] text-slate-400 mt-1">' + dateStr + '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">';
+    html += '<span class="text-xs text-slate-500"><i class="fas fa-coins mr-1 text-amber-500"></i>' + formatNum(p.totalAmount) + ' บาท</span>';
+    html += '<span class="text-xs text-slate-400"><i class="fas fa-calendar mr-1"></i>' + p.duration + ' วัน</span>';
+    html += '<div class="flex gap-2">';
+    html += '<button onclick="event.stopPropagation();editProject(' + p.id + ')" class="text-[10px] text-blue-600 font-semibold px-2 py-1 rounded bg-blue-50 hover:bg-blue-100"><i class="fas fa-edit mr-1"></i>แก้ไข</button>';
+    html += '<button onclick="event.stopPropagation();deleteProject(' + p.id + ')" class="text-[10px] text-red-500 font-semibold px-2 py-1 rounded bg-red-50 hover:bg-red-100"><i class="fas fa-trash mr-1"></i>ลบ</button>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+  }
+  document.getElementById('projectList').innerHTML = html;
+}
+
+// ══════════════════════════════════════
+// DELETE PROJECT
+// ══════════════════════════════════════
+async function deleteProject(id) {
+  if (!confirm('ยืนยันลบโครงการนี้?\nข้อมูลสัญญาและงวดเงินจะถูกลบทั้งหมด ไม่สามารถกู้คืนได้')) return;
+  try {
+    await db.installments.where('projectId').equals(id).delete();
+    await db.variations.where('projectId').equals(id).delete();
+    await db.stoppages.where('projectId').equals(id).delete();
+    await db.evidence.where('projectId').equals(id).delete();
+    await db.projects.delete(id);
+    showToast('ลบโครงการเรียบร้อย');
+    renderProjects();
+  } catch (err) {
+    showToast('เกิดข้อผิดพลาด: ' + err.message);
+  }
+}
+
+// ══════════════════════════════════════
+// EDIT PROJECT — โหลดข้อมูลกลับเข้าฟอร์ม
+// ══════════════════════════════════════
+var editingProjectId = null;
+
+async function editProject(id) {
+  var p = await db.projects.get(id);
+  if (!p) return;
+  var insts = await db.installments.where('projectId').equals(id).sortBy('seq');
+
+  editingProjectId = id;
+  switchTab(1);
+
+  // Fill party type
+  var ptRadio = document.querySelector('input[name="partyType"][value="' + (p.partyType||'pp') + '"]');
+  if (ptRadio) ptRadio.checked = true;
+  onPartyTypeChange();
+
+  // Fill VAT checkbox
+  if (document.getElementById('c_useVAT')) {
+    document.getElementById('c_useVAT').checked = p.useVAT || false;
+  }
+
+  // Fill client
+  document.getElementById('c_clientName').value = p.clientName || '';
+  document.getElementById('c_clientID').value = p.clientID || '';
+  document.getElementById('c_clientPhone').value = p.clientPhone || '';
+  document.getElementById('c_clientAddr').value = p.clientAddr || '';
+
+  // Fill contractor
+  document.getElementById('c_contractorName').value = p.contractorName || '';
+  document.getElementById('c_contractorID').value = p.contractorID || '';
+  document.getElementById('c_contractorPhone').value = p.contractorPhone || '';
+  document.getElementById('c_contractorAddr').value = p.contractorAddr || '';
+
+  // Fill scope
+  document.getElementById('c_useQuote').checked = p.useQuote || false;
+  toggleQuoteMode();
+  if (p.useQuote) {
+    document.getElementById('c_quoteNo').value = p.quoteNo || '';
+    document.getElementById('c_quoteDate').value = p.quoteDate || '';
+  } else {
+    document.getElementById('c_specText').value = p.specText || '';
+  }
+  document.getElementById('c_duration').value = p.duration || '';
+  document.getElementById('c_totalAmount').value = p.totalAmount || '';
+
+  // Fill warranty
+  var wRadio = document.querySelector('input[name="warranty"][value="' + (p.warrantyYears||1) + '"]');
+  if (wRadio) wRadio.checked = true;
+  document.getElementById('c_retention').checked = p.useRetention || false;
+
+  // Fill installments
+  installments = [];
+  for (var i = 0; i < insts.length; i++) {
+    installments.push({ label: insts[i].label, percent: insts[i].percent });
+  }
+  if (installments.length === 0) initInstallments();
+  else renderInstallments();
+
+  updateProgress();
+
+  // Change button text
+  document.getElementById('btnSave').innerHTML = '<i class="fas fa-save mr-2"></i>บันทึกการแก้ไขและสร้าง PDF ใหม่';
+  showToast('โหลดข้อมูลโครงการแล้ว — แก้ไขและกดบันทึก');
+}
+
+// ══════════════════════════════════════
+// OPEN PROJECT DETAIL
+// ══════════════════════════════════════
+async function openDetail(id) {
+  var p = await db.projects.get(id);
+  if (!p) return;
+  var insts = await db.installments.where('projectId').equals(id).sortBy('seq');
+
+  for (var i = 0; i < 3; i++) document.getElementById('page' + i).classList.add('hidden');
+  document.getElementById('pageDetail').classList.remove('hidden');
+
+  var html = '';
+  html += '<div class="bg-white rounded-2xl card-shadow overflow-hidden mb-4">';
+  html += '<div class="bg-brand-600 text-white p-4">';
+  html += '<div class="text-lg font-bold">' + escHTML(p.clientName) + '</div>';
+  html += '<div class="text-xs opacity-80 mt-1"><i class="fas fa-hard-hat mr-1"></i>ช่าง: ' + escHTML(p.contractorName) + '</div>';
+  html += '<div class="flex gap-3 mt-2 text-xs">';
+  html += '<span><i class="fas fa-coins mr-1"></i>' + formatNum(p.totalAmount) + ' บาท</span>';
+  html += '<span><i class="fas fa-calendar mr-1"></i>' + p.duration + ' วัน</span>';
+  html += '<span><i class="fas fa-shield-alt mr-1"></i>ประกัน ' + p.warrantyYears + ' ปี</span>';
+  html += '</div></div>';
+
+  // งวดเงิน
+  html += '<div class="p-4">';
+  html += '<div class="text-xs font-bold text-slate-600 mb-3"><i class="fas fa-list-ol mr-1"></i>งวดจ่ายเงิน</div>';
+  for (var j = 0; j < insts.length; j++) {
+    var inst = insts[j];
+    var paidClass = inst.paid ? 'bg-brand-50 border-brand-200' : 'bg-white border-slate-200';
+    var paidIcon = inst.paid ? '<i class="fas fa-check-circle text-brand-500"></i>' : '<i class="far fa-circle text-slate-300"></i>';
+    html += '<div class="flex items-center gap-3 p-3 border rounded-xl mb-2 ' + paidClass + ' cursor-pointer" onclick="togglePaid(' + inst.id + ')">';
+    html += '<div class="text-lg">' + paidIcon + '</div>';
+    html += '<div class="flex-1">';
+    html += '<div class="text-sm font-semibold text-slate-700">' + escHTML(inst.label) + '</div>';
+    html += '<div class="text-xs text-slate-500">' + inst.percent + '% = ' + formatNum(inst.amount) + ' บาท</div>';
+    html += '</div>';
+    html += '</div>';
+  }
+  html += '</div></div>';
+
+  // ═══ VO — Variation Order ═══
+  var vos = await db.variations.where('projectId').equals(id).toArray();
+  html += '<div class="bg-white rounded-2xl card-shadow overflow-hidden mb-4">';
+  html += '<div class="bg-amber-600 text-white px-4 py-3 flex items-center justify-between">';
+  html += '<div class="flex items-center gap-2"><i class="fas fa-exchange-alt"></i><span class="text-sm font-bold">งานลด-งานเพิ่ม (Variation Order)</span></div>';
+  html += '<button onclick="showVOForm('+id+')" class="text-xs bg-white/20 px-3 py-1 rounded-lg font-semibold">+ เพิ่ม VO</button>';
+  html += '</div>';
+  html += '<div class="p-4">';
+  if (vos.length === 0) {
+    html += '<p class="text-xs text-slate-400 text-center py-3">ยังไม่มีรายการ VO</p>';
+  } else {
+    for (var v = 0; v < vos.length; v++) {
+      var vo = vos[v];
+      var vDate = new Date(vo.createdAt).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});
+      html += '<div class="border border-slate-200 rounded-xl p-3 mb-2">';
+      html += '<div class="flex justify-between items-start">';
+      html += '<div class="text-sm font-semibold text-slate-700">VO#'+(v+1)+' — '+escHTML(vo.description)+'</div>';
+      html += '<button onclick="deleteVO('+vo.id+','+id+')" class="text-red-400 text-xs hover:text-red-600"><i class="fas fa-trash"></i></button>';
+      html += '</div>';
+      html += '<div class="flex gap-3 mt-1 text-xs text-slate-500">';
+      html += '<span><i class="fas fa-coins mr-1"></i>'+(vo.amount>=0?'+':'')+formatNum(vo.amount)+' บาท</span>';
+      html += '<span><i class="fas fa-clock mr-1"></i>+'+vo.extraDays+' วัน</span>';
+      html += '<span><i class="fas fa-calendar mr-1"></i>'+vDate+'</span>';
+      html += '</div>';
+      html += '<button onclick="generateVOPDF('+id+','+vo.id+')" class="mt-2 text-xs text-amber-600 font-semibold"><i class="fas fa-file-pdf mr-1"></i>สร้าง PDF ใบ VO</button>';
+      html += '</div>';
+    }
+  }
+  html += '</div></div>';
+
+  // ═══ STOPPAGE LOG ═══
+  var stops = await db.stoppages.where('projectId').equals(id).toArray();
+  var totalStopDays = 0;
+  for (var sd = 0; sd < stops.length; sd++) totalStopDays += (stops[sd].days || 0);
+  html += '<div class="bg-white rounded-2xl card-shadow overflow-hidden mb-4">';
+  html += '<div class="bg-red-600 text-white px-4 py-3 flex items-center justify-between">';
+  html += '<div class="flex items-center gap-2"><i class="fas fa-pause-circle"></i><span class="text-sm font-bold">บันทึกอุปสรรค/หยุดงาน</span></div>';
+  html += '<button onclick="showStopForm('+id+')" class="text-xs bg-white/20 px-3 py-1 rounded-lg font-semibold">+ บันทึก</button>';
+  html += '</div>';
+  html += '<div class="p-4">';
+  if (totalStopDays > 0) {
+    html += '<div class="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 text-center">';
+    html += '<div class="text-xs text-red-600 font-semibold">รวมวันหยุดงาน</div>';
+    html += '<div class="text-2xl font-bold text-red-700">'+totalStopDays+' วัน</div>';
+    html += '<div class="text-xs text-red-500">ยืดสัญญาอัตโนมัติ — หยุดคิดค่าปรับ</div>';
+    html += '</div>';
+  }
+  if (stops.length === 0) {
+    html += '<p class="text-xs text-slate-400 text-center py-3">ยังไม่มีบันทึก</p>';
+  } else {
+    for (var st = 0; st < stops.length; st++) {
+      var stop = stops[st];
+      var stDate = new Date(stop.createdAt).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});
+      html += '<div class="border border-slate-200 rounded-xl p-3 mb-2 flex items-start gap-3">';
+      html += '<div class="text-red-500"><i class="fas fa-exclamation-triangle"></i></div>';
+      html += '<div class="flex-1">';
+      html += '<div class="text-sm font-semibold text-slate-700">'+escHTML(stop.reason)+'</div>';
+      html += '<div class="text-xs text-slate-500 mt-1">'+stop.days+' วัน · '+stDate+'</div>';
+      html += '</div>';
+      html += '<button onclick="deleteStop('+stop.id+','+id+')" class="text-red-400 text-xs"><i class="fas fa-trash"></i></button>';
+      html += '</div>';
+    }
+  }
+  html += '</div></div>';
+
+  // ═══ DISPUTE CENTER ═══
+  html += '<div class="bg-white rounded-2xl card-shadow overflow-hidden mb-4">';
+  html += '<div class="bg-slate-800 text-white px-4 py-3 flex items-center gap-2">';
+  html += '<i class="fas fa-gavel"></i><span class="text-sm font-bold">ศูนย์จัดการข้อพิพาทและไกล่เกลี่ย</span>';
+  html += '</div>';
+  html += '<div class="p-4 space-y-2">';
+
+  // ปุ่ม 1: ประเมินก่อนฟ้อง
+  html += '<button onclick="showPreSueInfo()" class="w-full text-left border border-slate-200 rounded-xl p-3 hover:bg-slate-50 transition-colors">';
+  html += '<div class="flex items-center gap-3">';
+  html += '<div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"><i class="fas fa-search text-blue-600"></i></div>';
+  html += '<div><div class="text-sm font-semibold text-slate-700">ประเมินตนเองก่อนฟ้อง</div>';
+  html += '<div class="text-xs text-slate-500">สิทธิ์กฎหมายแพ่ง ค่าปรับ น้ำรั่วซึมคอนโด</div></div>';
+  html += '</div></button>';
+
+  // ปุ่ม 2: แนบหลักฐาน
+  html += '<button onclick="showEvidenceForm('+id+')" class="w-full text-left border border-slate-200 rounded-xl p-3 hover:bg-slate-50 transition-colors">';
+  html += '<div class="flex items-center gap-3">';
+  html += '<div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center"><i class="fas fa-paperclip text-amber-600"></i></div>';
+  html += '<div><div class="text-sm font-semibold text-slate-700">แนบหลักฐานเพิ่มเติม</div>';
+  html += '<div class="text-xs text-slate-500">รูปภาพ แชตไลน์ ภาพหน้างาน บันทึกเสียง</div></div>';
+  html += '</div></button>';
+
+  // จำนวนหลักฐานที่มี
+  var evCount = await db.evidence.where('projectId').equals(id).count();
+  if (evCount > 0) {
+    html += '<div class="text-xs text-slate-500 text-center"><i class="fas fa-folder mr-1"></i>มีหลักฐาน '+evCount+' รายการ</div>';
+  }
+
+  // ปุ่ม 3: ไกล่เกลี่ยออนไลน์
+  html += '<a href="https://mediation.coj.go.th/" target="_blank" class="block w-full text-left border border-green-200 bg-green-50 rounded-xl p-3 hover:bg-green-100 transition-colors">';
+  html += '<div class="flex items-center gap-3">';
+  html += '<div class="w-10 h-10 bg-green-200 rounded-lg flex items-center justify-center"><i class="fas fa-handshake text-green-700"></i></div>';
+  html += '<div><div class="text-sm font-semibold text-green-800">ไกล่เกลี่ยก่อนฟ้อง (ฟรี)</div>';
+  html += '<div class="text-xs text-green-600">mediation.coj.go.th — ศาลยุติธรรม</div></div>';
+  html += '<i class="fas fa-external-link-alt text-green-500 ml-auto"></i>';
+  html += '</div></a>';
+
+  // ปุ่ม 4: ยื่นฟ้องออนไลน์
+  html += '<a href="https://efiling3.coj.go.th/citizen/" target="_blank" class="block w-full text-left border border-red-200 bg-red-50 rounded-xl p-3 hover:bg-red-100 transition-colors">';
+  html += '<div class="flex items-center gap-3">';
+  html += '<div class="w-10 h-10 bg-red-200 rounded-lg flex items-center justify-center"><i class="fas fa-file-alt text-red-700"></i></div>';
+  html += '<div><div class="text-sm font-semibold text-red-800">ยื่นคำฟ้องออนไลน์ (e-Filing)</div>';
+  html += '<div class="text-xs text-red-600">คดีทุนทรัพย์ไม่เกิน 300,000 บาท</div></div>';
+  html += '<i class="fas fa-external-link-alt text-red-500 ml-auto"></i>';
+  html += '</div></a>';
+
+  html += '</div></div>';
+
+  // PDF button
+  html += '<div class="mt-4">';
+  html += '<button onclick="generateContractPDF(' + id + ')" class="w-full bg-brand-600 text-white py-3 rounded-xl text-sm font-bold hover:bg-brand-700 active:scale-[.98] transition-all">';
+  html += '<i class="fas fa-file-pdf mr-2"></i>สร้าง PDF สัญญาหลัก';
+  html += '</button></div>';
+
+  html += '<div class="text-center text-xs text-slate-400 mt-4 mb-8">';
+  html += 'FairJoint v1.0 · พัฒนาโดย SMG Glass & Metal';
+  html += '</div>';
+
+  document.getElementById('detailContent').innerHTML = html;
+}
+
+async function togglePaid(instId) {
+  var inst = await db.installments.get(instId);
+  if (!inst) return;
+  await db.installments.update(instId, { paid: !inst.paid });
+  openDetail(inst.projectId);
+}
+
+function closeDetail() {
+  document.getElementById('pageDetail').classList.add('hidden');
+  switchTab(0);
+}
+
+// ══════════════════════════════════════
+// VO — Variation Order
+// ══════════════════════════════════════
+function showVOForm(projId) {
+  var desc = prompt('รายละเอียดงานลด/งานเพิ่ม:');
+  if (!desc) return;
+  var amtStr = prompt('งบประมาณส่วนต่าง (บาท):\n+ = งานเพิ่ม, - = งานลด');
+  var amt = parseFloat(amtStr) || 0;
+  var daysStr = prompt('ขยายเวลาเพิ่ม (วัน):');
+  var days = parseInt(daysStr) || 0;
+  db.variations.add({
+    projectId: projId,
+    description: desc,
+    amount: amt,
+    extraDays: days,
+    createdAt: new Date().toISOString()
+  }).then(function() {
+    showToast('บันทึก VO เรียบร้อย');
+    openDetail(projId);
+  });
+}
+
+async function deleteVO(voId, projId) {
+  if (!confirm('ลบรายการ VO นี้?')) return;
+  await db.variations.delete(voId);
+  showToast('ลบ VO แล้ว');
+  openDetail(projId);
+}
+
+async function generateVOPDF(projId, voId) {
+  var p = await db.projects.get(projId);
+  var vo = await db.variations.get(voId);
+  if (!p || !vo) return;
+  var vos = await db.variations.where('projectId').equals(projId).toArray();
+  var voNum = vos.findIndex(function(v){ return v.id === voId; }) + 1;
+  var cd = new Date(vo.createdAt);
+  var thaiMonths = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  var h = '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>VO#'+voNum+'</title>';
+  h += '<style>@import url("https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap");';
+  h += 'body{font-family:"Sarabun",sans-serif;font-size:14px;line-height:1.7;padding:20mm;max-width:794px;margin:0 auto;}';
+  h += '.b{font-weight:700;} .uline{text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;}';
+  h += '.title{text-align:center;font-size:18px;font-weight:700;margin-bottom:16px;}';
+  h += '.indent{text-indent:40px;} .sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:50px;text-align:center;}';
+  h += '.sig-line{width:200px;margin:0 auto 4px;border-bottom:1px dotted #000;height:30px;}';
+  h += '.footer{text-align:center;font-size:10px;color:#999;margin-top:30px;border-top:1px solid #ddd;padding-top:8px;}';
+  h += '.no-print{text-align:center;padding:12px;background:#d97706;color:#fff;} .print-btn{padding:10px 30px;background:#fff;color:#d97706;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-left:10px;}';
+  h += '@media print{.no-print{display:none!important;}}';
+  h += '</style></head><body>';
+  h += '<div class="no-print">ตรวจสอบแล้วกด → <button class="print-btn" onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button></div>';
+  h += '<p class="title">ใบแนบท้ายสัญญา — Variation Order (VO#'+voNum+')</p>';
+  h += '<p>อ้างอิงสัญญาจ้างทำของ ระหว่าง <span class="b">'+esc(p.clientName)+'</span> (ผู้ว่าจ้าง) กับ <span class="b">'+esc(p.contractorName)+'</span> (ผู้รับจ้าง)</p>';
+  h += '<p>ลงวันที่ '+cd.getDate()+' '+thaiMonths[cd.getMonth()+1]+' '+(cd.getFullYear()+543)+'</p><br>';
+  h += '<p class="indent">คู่สัญญาทั้งสองฝ่ายตกลงแก้ไขเพิ่มเติมสัญญาหลัก ดังนี้:</p>';
+  h += '<p class="indent"><span class="b">รายละเอียด:</span> <span class="uline">'+esc(vo.description)+'</span></p>';
+  h += '<p class="indent"><span class="b">งบประมาณส่วนต่าง:</span> <span class="uline">'+(vo.amount>=0?'+':'')+formatNum(vo.amount)+' บาท</span></p>';
+  h += '<p class="indent"><span class="b">ขยายเวลา:</span> <span class="uline">'+vo.extraDays+'</span> วัน</p>';
+  h += '<p class="indent" style="margin-top:16px;">ใบแนบท้ายฉบับนี้ถือเป็นส่วนหนึ่งของสัญญาหลัก ข้อความอื่นที่ไม่ได้แก้ไขในฉบับนี้ให้คงเดิมทุกประการ</p>';
+  h += '<div class="sig-grid"><div><div class="sig-line"></div>('+esc(p.clientName)+')<br>ผู้ว่าจ้าง</div><div><div class="sig-line"></div>('+esc(p.contractorName)+')<br>ผู้รับจ้าง</div></div>';
+  h += '<div class="footer">พัฒนาโดย smg glass v.1.0 - สนับสนุนธรรมาภิบาลคู่ค้าและความเป็นธรรมในห่วงโซ่อุปทานตามเกณฑ์ ESG</div>';
+  h += '</body></html>';
+
+  openPrintPreview(h);
+  showToast('เปิดใบ VO แล้ว');
+}
+
+// ══════════════════════════════════════
+// STOPPAGE LOG
+// ══════════════════════════════════════
+function showStopForm(projId) {
+  var reason = prompt('สาเหตุการหยุดงาน:\nเช่น หน้าปูนเบี้ยว / เจ้าของบ้านสั่งระงับ / รอวัสดุ');
+  if (!reason) return;
+  var daysStr = prompt('จำนวนวันที่หยุดงาน:');
+  var days = parseInt(daysStr) || 0;
+  if (days <= 0) { showToast('กรุณาระบุจำนวนวัน'); return; }
+  db.stoppages.add({
+    projectId: projId,
+    reason: reason,
+    days: days,
+    createdAt: new Date().toISOString()
+  }).then(function() {
+    showToast('บันทึกอุปสรรคเรียบร้อย — ยืดสัญญา +'+days+' วัน');
+    openDetail(projId);
+  });
+}
+
+async function deleteStop(stopId, projId) {
+  if (!confirm('ลบบันทึกอุปสรรคนี้?')) return;
+  await db.stoppages.delete(stopId);
+  showToast('ลบแล้ว');
+  openDetail(projId);
+}
+
+// ══════════════════════════════════════
+// EVIDENCE — แนบหลักฐาน
+// ══════════════════════════════════════
+function showEvidenceForm(projId) {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,audio/*';
+  input.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showToast('ไฟล์ใหญ่เกิน 5MB'); return; }
+    var note = prompt('หมายเหตุ (ไม่บังคับ):') || '';
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      db.evidence.add({
+        projectId: projId,
+        type: file.type.startsWith('image') ? 'image' : 'audio',
+        data: ev.target.result,
+        note: note,
+        createdAt: new Date().toISOString()
+      }).then(function() {
+        showToast('บันทึกหลักฐานเรียบร้อย');
+        openDetail(projId);
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+// ══════════════════════════════════════
+// PRE-SUE INFO POPUP
+// ══════════════════════════════════════
+function showPreSueInfo() {
+  var msg = '═══ ประเมินตนเองก่อนฟ้อง ═══\n\n';
+  msg += '1. ค่าปรับล่าช้า:\n';
+  msg += '   - ศาลมักปรับลดค่าปรับลง 30-50%\n';
+  msg += '   - ค่าปรับรวมไม่ควรเกิน 10% ของค่าจ้าง\n';
+  msg += '   - ต้องพิสูจน์ว่าเสียหายจริง\n\n';
+  msg += '2. น้ำรั่วซึมคอนโด:\n';
+  msg += '   - ระบบกันซึมส่วนกลาง = ความรับผิดนิติฯ\n';
+  msg += '   - ช่างรับผิดเฉพาะจุดที่ตนติดตั้ง\n';
+  msg += '   - ต้องพิสูจน์ว่ารั่วจากจุดไหน\n\n';
+  msg += '3. กระจกเทมเปอร์แตกเอง:\n';
+  msg += '   - Nickel Sulfide Inclusion = ไม่ใช่ความผิดช่าง\n';
+  msg += '   - โครงสร้างบิดตัว = ไม่ใช่ความผิดช่าง\n';
+  msg += '   - ต้องมีผลตรวจจากผู้เชี่ยวชาญ\n\n';
+  msg += '4. อายุความ:\n';
+  msg += '   - สัญญาจ้างทำของ = 2 ปี (ม.601)\n';
+  msg += '   - ความชำรุดบกพร่อง = 1 ปี (ม.600)\n\n';
+  msg += '5. คดีมโนสาเร่ (ทุนทรัพย์ไม่เกิน 300,000):\n';
+  msg += '   - ฟ้องออนไลน์ e-Filing ได้\n';
+  msg += '   - ไม่จำเป็นต้องมีทนาย\n';
+  msg += '   - ศาลพยายามไกล่เกลี่ยก่อนตัดสิน';
+  alert(msg);
+}
+
+// ══════════════════════════════════════
+// PRINT PREVIEW OVERLAY (แทน window.open ที่ถูก block)
+// ══════════════════════════════════════
+function openPrintPreview(htmlContent) {
+  // Remove old overlay if exists
+  var old = document.getElementById('printOverlay');
+  if (old) old.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'printOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:#fff;display:flex;flex-direction:column;';
+
+  // Toolbar
+  var toolbar = document.createElement('div');
+  toolbar.style.cssText = 'background:#059669;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:8px;flex-shrink:0;';
+  toolbar.innerHTML = '<button onclick="closePrintPreview()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:6px 14px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">✕ ปิด</button>'
+    + '<button onclick="printPreview()" style="background:#fff;color:#059669;border:none;padding:8px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ พิมพ์ / บันทึก PDF</button>'
+    + '<button onclick="exportWord()" style="background:#2563eb;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">📄 บันทึก Word</button>'
+    + '<span style="font-size:12px;margin-left:auto;">ตรวจสอบแล้วกดพิมพ์</span>';
+  overlay.appendChild(toolbar);
+
+  // Content iframe
+  var iframe = document.createElement('iframe');
+  iframe.id = 'printFrame';
+  iframe.style.cssText = 'flex:1;border:none;width:100%;';
+  overlay.appendChild(iframe);
+
+  document.body.appendChild(overlay);
+
+  // Write content to iframe
+  var doc = iframe.contentDocument || iframe.contentWindow.document;
+  // Remove the no-print bar from content since we have our own toolbar
+  var cleanHTML = htmlContent.replace(/<div class="no-print[^"]*">[\s\S]*?<\/div>/, '');
+  doc.open();
+  doc.write(cleanHTML);
+  doc.close();
+
+  // Store HTML for Word export
+  window._lastPrintHTML = htmlContent;
+}
+
+function closePrintPreview() {
+  var el = document.getElementById('printOverlay');
+  if (el) el.remove();
+}
+
+function printPreview() {
+  var iframe = document.getElementById('printFrame');
+  if (iframe) {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+  }
+}
+
+function exportWord() {
+  if (!window._lastPrintHTML) { showToast('ไม่มีข้อมูลสัญญา'); return; }
+  // Create Word-compatible HTML
+  var wordHTML = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>body{font-family:TH Sarabun New,Sarabun,sans-serif;font-size:16pt;line-height:1.5;}@page{size:A4;margin:2cm;}</style></head><body>';
+  // Extract body content from the print HTML
+  var bodyMatch = window._lastPrintHTML.match(/<div class="page-wrap">([\s\S]*?)<\/div>\s*<\/body>/);
+  if (bodyMatch) {
+    wordHTML += bodyMatch[1];
+  } else {
+    wordHTML += window._lastPrintHTML;
+  }
+  wordHTML += '</body></html>';
+
+  var blob = new Blob([wordHTML], {type: 'application/msword'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'สัญญาจ้างทำของ.doc';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('บันทึกไฟล์ Word เรียบร้อย');
+}
+
+// ══════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════
+function formatNum(n) {
+  if (!n && n !== 0) return '0';
+  return Number(n).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function escHTML(s) {
+  if (!s) return '';
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function showToast(msg) {
+  var el = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  el.classList.remove('opacity-0', 'translate-y-4');
+  el.classList.add('opacity-100', 'translate-y-0');
+  setTimeout(function() {
+    el.classList.remove('opacity-100', 'translate-y-0');
+    el.classList.add('opacity-0', 'translate-y-4');
+  }, 2500);
+}
+
+// ══════════════════════════════════════
+// PDF GENERATOR — window.print() ภาษาไทย 100%
+// ══════════════════════════════════════
+function loadThaiFont() { /* ไม่ต้องโหลดฟอนต์ — ใช้ฟอนต์ระบบ */ }
+
+function esc(s) { var d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+async function generateContractPDF(projectId) {
+  var p = await db.projects.get(projectId);
+  if (!p) { showToast('ไม่พบข้อมูลโครงการ'); return; }
+  var insts = await db.installments.where('projectId').equals(projectId).sortBy('seq');
+
+  var cd = new Date(p.createdAt);
+  var thaiDay = cd.getDate();
+  var thaiMonths = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  var thaiMonth = thaiMonths[cd.getMonth()+1];
+  var thaiYear = cd.getFullYear() + 543;
+  var isWHT = (p.partyType === 'cp' || p.partyType === 'cc');
+  var stampDuty = p.stampDuty || Math.ceil(p.totalAmount / 1000);
+  var ptLabel = {pp:'บุคคลธรรมดา กับ บุคคลธรรมดา', cp:'นิติบุคคล กับ บุคคลธรรมดา', cc:'นิติบุคคล กับ นิติบุคคล'};
+
+  var h = '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">';
+  h += '<title>สัญญาจ้างทำของ — '+esc(p.clientName)+'</title>';
+  h += '<style>';
+  h += '@import url("https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,400;0,700;1,400&display=swap");';
+  h += '*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }';
+  h += 'body { font-family: "Sarabun", "TH Sarabun New", "Tahoma", sans-serif; font-size: 14px; color: #000; line-height: 1.7; word-wrap: break-word; overflow-wrap: break-word; }';
+  h += '@page { size: A4; margin: 20mm 15mm 20mm 20mm; }';
+  h += '@media print { body { padding: 0; font-size: 13px; } .no-print { display: none !important; } .page-wrap { padding: 0; } }';
+  h += '@media screen { body { max-width: 794px; margin: 0 auto; padding: 20mm 15mm; background: #eee; } .page-wrap { background: #fff; padding: 20mm 18mm; box-shadow: 0 2px 12px rgba(0,0,0,.15); min-height: 1100px; } }';
+  h += '.center { text-align: center; }';
+  h += '.right { text-align: right; }';
+  h += '.title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 16px; }';
+  h += '.indent { text-indent: 40px; }';
+  h += '.b { font-weight: 700; }';
+  h += '.uline { text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }';
+  h += 'p { margin-bottom: 4px; }';
+  h += '.section { margin-top: 14px; }';
+  h += '.sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 50px; }';
+  h += '.sig-box { text-align: center; }';
+  h += '.sig-line { width: 220px; margin: 0 auto 4px; border-bottom: 1px dotted #000; height: 30px; }';
+  h += '.sig-name { font-size: 14px; }';
+  h += '.sig-role { font-size: 13px; color: #333; }';
+  h += '.footer { text-align: center; font-size: 10px; color: #999; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 8px; }';
+  h += '.inst-tbl { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; table-layout: fixed; }';
+  h += '.inst-tbl th, .inst-tbl td { border: 1px solid #999; padding: 4px 6px; word-wrap: break-word; }';
+  h += '.inst-tbl th { background: #f0f0f0; font-weight: 700; text-align: center; font-size: 11px; }';
+  h += '.inst-tbl td { text-align: right; }';
+  h += '.inst-tbl td:first-child { width: 30px; } .inst-tbl td:nth-child(2) { text-align: left; width: auto; }';
+  h += '.print-bar { position: sticky; top: 0; z-index: 100; background: #059669; color: #fff; padding: 12px; text-align: center; }';
+  h += '.print-btn { padding: 10px 30px; background: #fff; color: #059669; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; margin-left: 10px; }';
+  h += '</style></head><body>';
+
+  h += '<div class="no-print print-bar">';
+  h += 'ตรวจสอบสัญญาแล้วกด → ';
+  h += '<button class="print-btn" onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button>';
+  h += '</div>';
+  h += '<div class="page-wrap">';
+
+  // ── หัวเอกสาร ──
+  h += '<p class="title">สัญญาจ้างทำของ</p>';
+  h += '<p class="right">เขียนที่ <span class="b uline">'+esc(p.clientAddr)+'</span></p>';
+  h += '<p class="right">วันที่ <span class="b uline">'+thaiDay+'</span> เดือน <span class="b uline">'+thaiMonth+'</span> พ.ศ. <span class="b uline">'+thaiYear+'</span></p>';
+  h += '<br>';
+
+  // ── คู่สัญญา ──
+  h += '<p class="indent">สัญญาฉบับนี้ทำขึ้นระหว่าง <span class="b uline">'+esc(p.clientName)+'</span>';
+  if (p.clientID) h += ' เลขประจำตัว <span class="b uline">'+esc(p.clientID)+'</span>';
+  h += ' อยู่เลขที่ <span class="b uline">'+esc(p.clientAddr)+'</span>';
+  h += ' โทร <span class="b uline">'+esc(p.clientPhone)+'</span>';
+  h += ' ซึ่งต่อไปในสัญญานี้เรียกว่า "ผู้ว่าจ้าง" ฝ่ายหนึ่ง</p>';
+
+  h += '<p class="indent">กับ <span class="b uline">'+esc(p.contractorName)+'</span>';
+  if (p.contractorID) h += ' เลขประจำตัว <span class="b uline">'+esc(p.contractorID)+'</span>';
+  if (p.contractorAddr) h += ' อยู่เลขที่ <span class="b uline">'+esc(p.contractorAddr)+'</span>';
+  h += ' โทร <span class="b uline">'+esc(p.contractorPhone)+'</span>';
+  h += ' ซึ่งต่อไปในสัญญานี้เรียกว่า "ผู้รับจ้าง" อีกฝ่ายหนึ่ง</p>';
+
+  h += '<p class="indent">ทั้งสองฝ่ายได้ตกลงกันดังมีข้อความต่อไปนี้</p>';
+  h += '<p style="font-size:12px;color:#555;">(ประเภทคู่สัญญา: '+(ptLabel[p.partyType]||'-')+')</p>';
+
+  // ── ข้อ 1: ขอบเขตงาน ──
+  h += '<p class="section indent"><span class="b">ข้อ 1.</span> ผู้ว่าจ้างตกลงจ้างและผู้รับจ้างตกลงรับจ้างให้ทำการ ';
+  if (p.useQuote) {
+    h += 'ตามใบเสนอราคาเลขที่ <span class="b uline">'+esc(p.quoteNo)+'</span> ลงวันที่ <span class="b uline">'+esc(p.quoteDate)+'</span> ';
+    h += 'ซึ่งแนบท้ายสัญญานี้และถือเป็นส่วนหนึ่งของสัญญา';
+  } else {
+    h += '<span class="b uline">'+esc(p.specText)+'</span>';
+  }
+  h += ' ให้ถูกต้องตามแบบและรายละเอียดของงานที่แนบท้ายสัญญาทุกประการและให้ถือเป็นส่วนหนึ่งของสัญญานี้</p>';
+
+  // ── ข้อ 2: กำหนดเวลา ──
+  h += '<p class="section indent"><span class="b">ข้อ 2.</span> ผู้รับจ้างตกลงจะรับทำการตามที่กำหนดในสัญญาข้อ 1. ให้เสร็จสิ้นภายในกำหนด <span class="b uline">'+p.duration+'</span> วัน นับแต่วันทำสัญญานี้</p>';
+  h += '<p class="indent">ในกรณีที่เกิดเหตุสุดวิสัยใดๆ เป็นเหตุให้การดำเนินกิจการดังกล่าวต้องหยุดชะงักลง โดยมิใช่ความผิดของฝ่ายผู้รับจ้าง ให้ยืดกำหนดเวลาในวรรคก่อนออกไปเท่ากับเวลาที่สูญเสียไปเพราะเหตุดังกล่าว</p>';
+  h += '<p class="indent">ถ้าผู้รับจ้างไม่สามารถทำงานให้แล้วเสร็จบริบูรณ์ภายในกำหนด ผู้ว่าจ้างมีสิทธิจะบอกเลิกสัญญา</p>';
+
+  // ── ข้อ 3: หลักประกัน ──
+  h += '<p class="section indent"><span class="b">ข้อ 3.</span> ';
+  if (p.useRetention) {
+    h += 'ผู้รับจ้างยินยอมให้หักเงินประกันผลงาน (Warranty Retention) ร้อยละ 5 จากงวดสุดท้าย เป็นเงิน <span class="b uline">'+formatNum(p.totalAmount*0.05)+'</span> บาท เพื่อประกันการปฏิบัติตามสัญญา คืนเมื่อครบกำหนดรับประกัน';
+  } else {
+    h += 'คู่สัญญาตกลงไม่มีหลักประกันเพิ่มเติมนอกเหนือจากงวดงานที่กำหนดไว้ในข้อ 4.';
+  }
+  h += '</p>';
+
+  // ── ข้อ 4: ราคาค่าจ้าง ──
+  var displayTotal = p.grandTotal || p.totalAmount;
+  var hasVAT = p.useVAT && p.vatAmount > 0;
+
+  h += '<p class="section indent"><span class="b">ข้อ 4.</span> ผู้ว่าจ้างตกลงชำระค่าจ้างให้แก่ผู้รับจ้าง';
+  if (hasVAT) {
+    h += ' เป็นเงินค่าจ้างก่อนภาษีมูลค่าเพิ่ม <span class="b uline">'+formatNum(p.totalAmount)+'</span> บาท';
+    h += ' ภาษีมูลค่าเพิ่ม 7% เป็นเงิน <span class="b uline">'+formatNum(p.vatAmount)+'</span> บาท';
+    h += ' รวมทั้งสิ้น <span class="b uline">'+formatNum(displayTotal)+'</span> บาท (<span class="b uline">'+bahtText(displayTotal)+'</span>)';
+  } else {
+    h += ' เป็นเงินทั้งสิ้น <span class="b uline">'+formatNum(displayTotal)+'</span> บาท (<span class="b uline">'+bahtText(displayTotal)+'</span>)';
+  }
+  h += ' โดยชำระค่าจ้างให้เป็นงวด รวม <span class="b uline">'+insts.length+'</span> งวด โดยจ่ายตามผลสำเร็จของงาน ซึ่งมีรายละเอียดการชำระค่าจ้างดังนี้</p>';
+
+  if (isWHT || hasVAT) {
+    h += '<table class="inst-tbl">';
+    h += '<tr><th>งวด</th><th>รายละเอียด</th><th>%</th><th>ยอดก่อนVAT</th>';
+    if (isWHT) h += '<th>หัก 3%</th>';
+    if (hasVAT) h += '<th>VAT 7%</th>';
+    h += '<th>จ่ายจริง</th></tr>';
+    for (var k = 0; k < insts.length; k++) {
+      var inst = insts[k];
+      var baseAmt = displayTotal > 0 ? (p.totalAmount * inst.percent / 100) : 0;
+      var whtAmt = isWHT ? Math.round(baseAmt * 0.03 * 100) / 100 : 0;
+      var vatAmt = hasVAT ? Math.round(baseAmt * 0.07 * 100) / 100 : 0;
+      var netAmt = baseAmt - whtAmt + vatAmt;
+      h += '<tr><td style="text-align:center;">'+(k+1)+'</td><td>'+esc(inst.label)+'</td>';
+      h += '<td style="text-align:center;">'+inst.percent+'%</td>';
+      h += '<td>'+formatNum(baseAmt)+'</td>';
+      if (isWHT) h += '<td style="color:#c00;">-'+formatNum(whtAmt)+'</td>';
+      if (hasVAT) h += '<td style="color:#6610f2;">+'+formatNum(vatAmt)+'</td>';
+      h += '<td><strong>'+formatNum(netAmt)+'</strong></td></tr>';
+    }
+    h += '</table>';
+    var notes = [];
+    if (isWHT) notes.push('ผู้ว่าจ้างหักภาษี ณ ที่จ่าย 3% จากฐานก่อน VAT (จ้างทำของ ตาม ป. รัษฎากร ม. 3 เตรส) และออกหนังสือรับรอง 50 ทวิ ให้ผู้รับจ้างทุกครั้งที่จ่ายเงิน');
+    if (hasVAT) notes.push('ยอดภาษีมูลค่าเพิ่ม (VAT) 7% คำนวณจากฐานค่าจ้างก่อน VAT ในแต่ละงวด');
+    h += '<p style="font-size:11px;color:#555;">หมายเหตุ: '+notes.join(' / ')+'</p>';
+  } else {
+    for (var k = 0; k < insts.length; k++) {
+      var inst = insts[k];
+      h += '<p class="indent"><span class="b">งวดที่ '+(k+1)+'.</span> ชำระเงินค่าจ้าง จำนวน <span class="b uline">'+formatNum(inst.amount)+'</span> บาท ('+bahtText(inst.amount)+') คิดเป็นร้อยละ <span class="b uline">'+inst.percent+'</span> จ่ายให้เมื่อผู้รับจ้างได้ <span class="b uline">'+esc(inst.label)+'</span></p>';
+    }
+  }
+
+  h += '<p class="indent" style="margin-top:8px;">หากผู้ว่าจ้างผิดนัดไม่ชำระเงินค่าจ้างแก่ผู้รับจ้างตามสัญญาข้อนี้ ไม่ว่างวดใดก็ตาม ผู้รับจ้างมีสิทธิบอกเลิกสัญญานี้ได้ และความเสียหายใดๆ เนื่องจากการไม่ชำระค่าจ้างตามสัญญา ผู้ว่าจ้างเป็นผู้รับผิดชอบชดใช้ค่าเสียหายนั้นแก่ผู้รับจ้างด้วย</p>';
+
+  // ── ข้อ 5: วัสดุอุปกรณ์ ──
+  h += '<p class="section indent"><span class="b">ข้อ 5.</span> วัสดุเครื่องมืออุปกรณ์ที่ใช้ในการงานรวมทั้งสัมภาระต่างๆ ที่จำเป็นให้ผู้รับจ้างเป็นผู้จัดหา ซึ่งจะต้องใช้วัสดุอุปกรณ์ตามขนาด คุณภาพ และช่างฝีมือดีดังที่แจ้งไว้ในรายละเอียดที่แนบท้ายสัญญานี้ จนแล้วเสร็จ</p>';
+
+  // ── ข้อ 6: แก้ไขเปลี่ยนแปลง ──
+  h += '<p class="section indent"><span class="b">ข้อ 6.</span> การแก้ไขเปลี่ยนแปลงรูปแบบ รายการ และรายละเอียดตามสัญญา ผู้ว่าจ้างจะต้องแจ้งให้ผู้รับจ้างทราบเป็นลายลักษณ์อักษร ผู้รับจ้างมีสิทธิที่จะยอมรับหรือไม่ยอมรับการแก้ไขเปลี่ยนแปลงก็ได้ ค่าใช้จ่ายจากการเปลี่ยนแปลงดังกล่าวผู้ว่าจ้างต้องรับผิดชอบ</p>';
+
+  // ── ข้อ 7: ห้ามจ้างช่วง ──
+  h += '<p class="section indent"><span class="b">ข้อ 7.</span> ผู้รับจ้างสัญญาว่าจะไม่เอางานทั้งหมดหรือส่วนหนึ่งส่วนใดแห่งสัญญานี้ไปให้ผู้อื่นรับจ้างช่วงอีกทอดหนึ่ง โดยมิได้รับอนุญาตจากผู้ว่าจ้างก่อน</p>';
+
+  // ── ข้อ 8: ค่าปรับล่าช้า ──
+  var penaltyPerDay = Math.round(p.totalAmount * 0.0005);
+  h += '<p class="section indent"><span class="b">ข้อ 8.</span> หากผู้รับจ้างทำงานไม่แล้วเสร็จตามกำหนดเวลาในข้อ 2. ผู้รับจ้างยินยอมให้ผู้ว่าจ้างปรับเป็นรายวัน วันละ <span class="b uline">'+formatNum(penaltyPerDay)+'</span> บาท (อัตราร้อยละ 0.05 ของค่าจ้างรวม) ทั้งนี้ค่าปรับรวมทั้งหมดต้องไม่เกินร้อยละ 10 ของค่าจ้างรวม</p>';
+
+  // ── ข้อ 9: การรับมอบงาน ──
+  h += '<p class="section indent"><span class="b">ข้อ 9.</span> เมื่อผู้รับจ้างทำงานแล้วเสร็จตามสัญญา ผู้ว่าจ้างจะต้องตรวจรับมอบงานภายใน 7 วัน นับแต่วันที่ผู้รับจ้างแจ้ง หากผู้ว่าจ้างไม่ตรวจรับภายในกำหนดให้ถือว่าผู้ว่าจ้างรับมอบงานแล้ว</p>';
+
+  // ── ข้อ 10: ความชำรุดบกพร่อง ──
+  h += '<p class="section indent"><span class="b">ข้อ 10.</span> ผู้รับจ้างรับประกันความชำรุดบกพร่องของงานเป็นระยะเวลา <span class="b uline">'+p.warrantyYears+'</span> ปี นับจากวันส่งมอบงานงวดสุดท้าย</p>';
+
+  // ── ข้อ 11: ข้อยกเว้น ──
+  h += '<p class="section indent"><span class="b">ข้อ 11.</span> ข้อยกเว้นความรับผิดของผู้รับจ้าง:</p>';
+  h += '<p style="padding-left:40px;">ก. กระจกเทมเปอร์แตกเองจากแรงเค้นบิดตัวของโครงสร้างปูน (Nickel Sulfide Inclusion) หรือโครงสร้างอาคารทรุดตัว</p>';
+  h += '<p style="padding-left:40px;">ข. ผู้ว่าจ้างใช้น้ำยาเคมี กรด หรือสารกัดกร่อนเช็ดทำความสะอาดจนซิลิโคนหรือผิวเคลือบเสื่อมสภาพ</p>';
+  h += '<p style="padding-left:40px;">ค. ความเสียหายจากภัยธรรมชาติ แผ่นดินไหว น้ำท่วม พายุ</p>';
+  h += '<p style="padding-left:40px;">ง. การดัดแปลง เจาะ ตัด ซ่อมงานที่ติดตั้งแล้วโดยบุคคลที่สาม</p>';
+  h += '<p style="padding-left:40px;">จ. น้ำรั่วซึมจากระบบกันซึมส่วนกลางของอาคาร ซึ่งไม่ใช่ความรับผิดของผู้รับจ้างติดตั้งกระจก-อลูมิเนียม</p>';
+
+  // ── ข้อ 12: การเลิกสัญญา ──
+  h += '<p class="section indent"><span class="b">ข้อ 12.</span> หากฝ่ายใดฝ่ายหนึ่งผิดสัญญาข้อใดข้อหนึ่ง อีกฝ่ายมีสิทธิ์บอกเลิกสัญญาได้โดยต้องแจ้งเป็นลายลักษณ์อักษรล่วงหน้าไม่น้อยกว่า 7 วัน และต้องชำระค่างานตามสัดส่วนที่ดำเนินการไปแล้วจริง</p>';
+
+  // ── ข้อ 13: ข้อพิพาท ──
+  h += '<p class="section indent"><span class="b">ข้อ 13.</span> กรณีมีข้อพิพาท คู่สัญญาตกลงใช้กระบวนการไกล่เกลี่ยก่อนฟ้องผ่านระบบศาลยุติธรรม หากไม่สามารถตกลงกันได้ ให้ฟ้องร้องต่อศาลที่มีเขตอำนาจ</p>';
+
+  // ── ข้อ 14: อากรแสตมป์ ──
+  h += '<p class="section indent"><span class="b">ข้อ 14.</span> สัญญาจ้างทำของฉบับนี้ต้องปิดอากรแสตมป์เป็นเงิน <span class="b uline">'+formatNum(stampDuty)+'</span> บาท (อัตรา 1 บาท ต่อทุก 1,000 บาทหรือเศษของ 1,000 บาท) ผู้รับจ้างเป็นผู้รับผิดชอบปิดอากรแสตมป์บนสัญญาต้นฉบับ</p>';
+
+  // ── ข้อ 15: ลงนาม ──
+  h += '<p class="section indent"><span class="b">ข้อ 15.</span> สัญญาฉบับนี้ทำขึ้นเป็นสองฉบับ มีข้อความถูกต้องตรงกัน คู่สัญญาได้อ่านและเข้าใจข้อความโดยตลอดแล้ว จึงลงลายมือชื่อไว้เป็นหลักฐานต่อหน้าพยาน</p>';
+
+  // ── ลงนาม ──
+  h += '<div class="sig-grid">';
+  h += '<div class="sig-box"><div class="sig-line"></div><div class="sig-name">('+esc(p.clientName)+')</div><div class="sig-role">ผู้ว่าจ้าง</div></div>';
+  h += '<div class="sig-box"><div class="sig-line"></div><div class="sig-name">('+esc(p.contractorName)+')</div><div class="sig-role">ผู้รับจ้าง</div></div>';
+  h += '<div class="sig-box"><div class="sig-line"></div><div class="sig-name">(.........................................)</div><div class="sig-role">พยาน</div></div>';
+  h += '<div class="sig-box"><div class="sig-line"></div><div class="sig-name">(.........................................)</div><div class="sig-role">พยาน</div></div>';
+  h += '</div>';
+
+  // Footer
+  h += '<div class="footer">พัฒนาโดย smg glass v.1.0 - สนับสนุนธรรมาภิบาลคู่ค้าและความเป็นธรรมในห่วงโซ่อุปทานตามเกณฑ์ ESG</div>';
+  h += '</div></body></html>';
+
+  // Open in overlay iframe
+  openPrintPreview(h);
+  showToast('เปิดหน้าสัญญาแล้ว');
+}
+
+// ══════════════════════════════════════
+// BAHT TEXT (แปลงตัวเลขเป็นคำอ่านภาษาไทย)
+// ══════════════════════════════════════
+function bahtText(num) {
+  num = parseFloat(num);
+  if (isNaN(num) || num === 0) return 'ศูนย์บาทถ้วน';
+  var tDigit = ['', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า'];
+  var tPlace = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน', 'ล้าน'];
+  var isNeg = num < 0;
+  num = Math.abs(num);
+  var baht = Math.floor(num);
+  var satang = Math.round((num - baht) * 100);
+  function readGroup(n) {
+    if (n === 0) return '';
+    var s = n.toString();
+    var result = '';
+    var len = s.length;
+    for (var i = 0; i < len; i++) {
+      var d = parseInt(s.charAt(i));
+      var pos = len - i - 1;
+      if (d === 0) continue;
+      if (pos === 1 && d === 1) { result += 'สิบ'; }
+      else if (pos === 1 && d === 2) { result += 'ยี่สิบ'; }
+      else if (pos === 0 && d === 1 && len > 1) { result += 'เอ็ด'; }
+      else { result += tDigit[d] + tPlace[pos]; }
+    }
+    return result;
+  }
+  var result = '';
+  if (isNeg) result = 'ลบ';
+  if (baht === 0) { result += ''; }
+  else if (baht > 999999) {
+    var millions = Math.floor(baht / 1000000);
+    var remainder = baht % 1000000;
+    result += readGroup(millions) + 'ล้าน';
+    if (remainder > 0) result += readGroup(remainder);
+  } else { result += readGroup(baht); }
+  result += 'บาท';
+  if (satang === 0) { result += 'ถ้วน'; }
+  else { result += readGroup(satang) + 'สตางค์'; }
+  return result;
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  initInstallments();
+  renderProjects();
+  updateProgress();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FairJoint v1.0 | SMG GLASS — สัญญาจ้างทำของมาตรฐาน</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        
+        .glass-fx {
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-fx::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -150%;
+            width: 50%; height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-25deg);
+            z-index: 20;
+            transition: left 0.7s ease-in-out;
+        }
+        .group:hover .glass-fx::after { left: 150%; }
+
+        .esg-fx {
+            position: relative;
+            overflow: hidden;
+        }
+        .esg-fx::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -150%;
+            width: 50%; height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-25deg);
+            z-index: 10;
+            animation: esg-shine 3s infinite;
+        }
+        @keyframes esg-shine {
+            0% { left: -150%; }
+            20% { left: 150%; }
+            100% { left: 150%; }
+        }
+
+        .float-up { animation: floatUp .6s ease-out both; }
+        .float-up-d1 { animation-delay: .1s; }
+        .float-up-d2 { animation-delay: .2s; }
+        .float-up-d3 { animation-delay: .3s; }
+        @keyframes floatUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-[#231f20]">
+
+    <!-- ══ NAV ══ -->
+    <nav class="bg-[#003e52] sticky top-0 z-50 shadow-md">
+        <div class="container mx-auto px-6 lg:px-16 py-3 flex items-center justify-between">
+            <a href="#" class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-[#6fa088] rounded-lg flex items-center justify-center">
+                    <i class="fas fa-handshake text-white text-sm"></i>
+                </div>
+                <div>
+                    <div class="text-white font-bold text-sm font-montserrat tracking-wide">FAIRJOINT</div>
+                    <div class="text-[#6fa088] text-[10px] font-montserrat tracking-widest">BY SMG GLASS</div>
+                </div>
+            </a>
+            <div class="hidden md:flex space-x-6 text-sm font-medium text-white/90">
+                <a href="app.html" class="hover:text-[#6fa088] transition-colors"><i class="fas fa-file-contract mr-1"></i>สร้างสัญญา</a>
+                <a href="efiling-guide.html" class="hover:text-[#6fa088] transition-colors"><i class="fas fa-gavel mr-1"></i>คู่มือ e-Filing</a>
+                <a href="https://tong778-bot.github.io/smg-tools/" class="hover:text-[#6fa088] transition-colors"><i class="fas fa-calculator mr-1"></i>SMG Tools</a>
+                <a href="https://www.smg-con.co.th/esg_center.php" target="_blank" class="text-[#6fa088] font-semibold hover:text-white transition-colors"><i class="fas fa-leaf mr-1"></i>ESG Center</a>
+            </div>
+            <!-- Mobile menu -->
+            <a href="app.html" class="md:hidden bg-[#6fa088] text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                <i class="fas fa-plus mr-1"></i>สร้างสัญญา
+            </a>
+        </div>
+    </nav>
+
+    <!-- ══ HERO ══ -->
+    <section class="relative py-16 lg:py-24 bg-white overflow-hidden border-b border-gray-100">
+        <div class="absolute inset-0 z-0 opacity-30">
+            <div class="absolute top-0 left-1/4 w-[1px] h-full bg-gray-200"></div>
+            <div class="absolute top-0 left-2/4 w-[1px] h-full bg-gray-200"></div>
+            <div class="absolute top-0 left-3/4 w-[1px] h-full bg-gray-200"></div>
+        </div>
+
+        <div class="container mx-auto px-6 lg:px-16 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                
+                <div class="lg:col-span-7 space-y-8">
+                    <div class="inline-flex items-center space-x-2 bg-[#003e52]/10 text-[#003e52] px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase font-montserrat float-up">
+                        <span>⚖️ FAIRJOINT v1.0 — CONTRACT PLATFORM</span>
+                    </div>
+                    
+                    <div class="space-y-4 float-up float-up-d1">
+                        <h1 class="text-3xl sm:text-5xl font-bold text-[#003e52] tracking-wide font-montserrat uppercase leading-tight">
+                            FAIR CONTRACT<br>FOR <span class="text-[#6fa088]">FAIR TRADE</span>
+                        </h1>
+                        <div class="h-1.5 w-24 bg-[#6fa088] rounded-full"></div>
+                    </div>
+                    
+                    <p class="text-gray-600 font-light leading-relaxed text-lg float-up float-up-d2">
+                        แพลตฟอร์มสร้าง<strong class="font-semibold text-[#003e52]">สัญญาจ้างทำของ</strong>มาตรฐานศาลแพ่ง สำหรับงานกระจก-อลูมิเนียม<br>
+                        ปกป้องทั้ง<strong class="font-semibold">เจ้าของบ้าน</strong>และ<strong class="font-semibold">ช่าง</strong>อย่างเป็นธรรม ตามหลัก ESG
+                    </p>
+
+                    <!-- Key features -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 float-up float-up-d3">
+                        <div class="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
+                            <div class="text-2xl mb-2">📝</div>
+                            <div class="text-xs font-semibold text-[#003e52]">สัญญา 15 ข้อ</div>
+                            <div class="text-[10px] text-gray-500">ตาม form_199</div>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
+                            <div class="text-2xl mb-2">🧾</div>
+                            <div class="text-xs font-semibold text-[#003e52]">WHT 3% + VAT</div>
+                            <div class="text-[10px] text-gray-500">คำนวณอัตโนมัติ</div>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
+                            <div class="text-2xl mb-2">🔒</div>
+                            <div class="text-xs font-semibold text-[#003e52]">PDPA</div>
+                            <div class="text-[10px] text-gray-500">เก็บในเครื่องเท่านั้น</div>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
+                            <div class="text-2xl mb-2">⚖️</div>
+                            <div class="text-xs font-semibold text-[#003e52]">Dispute Center</div>
+                            <div class="text-[10px] text-gray-500">ไกล่เกลี่ย + e-Filing</div>
+                        </div>
+                    </div>
+
+                    <!-- CTA buttons -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <a href="app.html" class="esg-fx flex items-center justify-center gap-3 p-5 bg-gradient-to-r from-[#003e52] to-[#005a6e] text-white rounded-xl shadow-lg shadow-[#003e52]/30 hover:shadow-xl hover:shadow-[#003e52]/40 transition-all duration-300 transform hover:-translate-y-1">
+                            <i class="fas fa-file-signature text-xl relative z-20"></i>
+                            <div class="relative z-20">
+                                <div class="font-bold text-base">เปิดแอปสร้างสัญญา</div>
+                                <div class="text-xs text-white/70">สร้าง PDF + Word ได้ทันที</div>
+                            </div>
+                        </a>
+                        <a href="efiling-guide.html" class="flex items-center justify-center gap-3 p-5 bg-white border-2 border-[#003e52] text-[#003e52] rounded-xl hover:bg-[#003e52] hover:text-white transition-all duration-300 group">
+                            <i class="fas fa-gavel text-xl"></i>
+                            <div>
+                                <div class="font-bold text-base">คู่มือเตรียมฟ้องออนไลน์</div>
+                                <div class="text-xs text-gray-500 group-hover:text-white/70">Checklist + ขั้นตอน e-Filing</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Right side: Feature cards -->
+                <div class="lg:col-span-5 relative">
+                    <div class="absolute -top-4 -left-4 w-16 h-16 border-t-4 border-l-4 border-[#6fa088] rounded-tl-xl hidden sm:block"></div>
+                    <div class="absolute -bottom-4 -right-4 w-16 h-16 border-b-4 border-r-4 border-[#003e52] rounded-br-xl hidden sm:block"></div>
+                    
+                    <div class="space-y-3">
+                        <!-- Card 1 -->
+                        <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-file-contract text-emerald-600 text-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-[#003e52] mb-1">สัญญาจ้างทำของ</div>
+                                    <div class="text-sm text-gray-500 leading-relaxed">ตามโครงสร้าง form_199 ศาลแพ่ง ครบ 15 ข้อ รองรับ 3 ประเภทคู่สัญญา</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Card 2 -->
+                        <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-exchange-alt text-amber-600 text-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-[#003e52] mb-1">Variation Order (VO)</div>
+                                    <div class="text-sm text-gray-500 leading-relaxed">บันทึกงานลด-เพิ่มหลังสัญญาหลัก พิมพ์ PDF ใบ VO แนบท้ายได้</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Card 3 -->
+                        <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-pause-circle text-red-600 text-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-[#003e52] mb-1">Stoppage Log</div>
+                                    <div class="text-sm text-gray-500 leading-relaxed">บันทึกอุปสรรคหน้างาน ยืดสัญญาอัตโนมัติ หยุดคิดค่าปรับ</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Card 4 -->
+                        <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-gavel text-blue-600 text-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-[#003e52] mb-1">Dispute Center</div>
+                                    <div class="text-sm text-gray-500 leading-relaxed">ประเมินก่อนฟ้อง · แนบหลักฐาน · ไกล่เกลี่ยออนไลน์ · e-Filing ศาล</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ ESG STRIP ══ -->
+    <section class="py-12 bg-gray-50">
+        <div class="container mx-auto px-6 lg:px-16">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold text-[#003e52] font-montserrat uppercase">ESG Framework</h2>
+                <div class="h-1 w-16 bg-[#6fa088] mx-auto mt-3 rounded-full"></div>
+                <p class="text-sm text-gray-500 mt-3">FairJoint พัฒนาภายใต้กรอบ ESG ของ SMG Glass</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- E -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mb-4">
+                        <i class="fas fa-globe-asia text-white text-lg"></i>
+                    </div>
+                    <div class="font-bold text-[#003e52] mb-1 font-montserrat">E — Environment</div>
+                    <div class="text-sm text-gray-500 leading-relaxed">Paperless Contract · ลดของเสียจากเปลี่ยนสเปก · ส่งเสริมกระจกประหยัดพลังงาน</div>
+                </div>
+                <!-- S -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mb-4">
+                        <i class="fas fa-users text-white text-lg"></i>
+                    </div>
+                    <div class="font-bold text-[#003e52] mb-1 font-montserrat">S — Social</div>
+                    <div class="text-sm text-gray-500 leading-relaxed">สัญญาเป็นธรรมสองทาง · งวดจ่ายเงินมาตรฐาน · ข้อยกเว้นที่เป็นธรรมต่อช่าง</div>
+                </div>
+                <!-- G -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center mb-4">
+                        <i class="fas fa-gavel text-white text-lg"></i>
+                    </div>
+                    <div class="font-bold text-[#003e52] mb-1 font-montserrat">G — Governance</div>
+                    <div class="text-sm text-gray-500 leading-relaxed">PDPA Compliant · เอกสารสารบรรณ · Audit Trail ทุกรายการ</div>
+                </div>
+            </div>
+
+            <!-- ESG Center link -->
+            <div class="mt-8">
+                <a href="https://www.smg-con.co.th/esg_center.php" target="_blank" class="esg-fx block max-w-md mx-auto text-center p-4 bg-gradient-to-r from-emerald-600 to-[#6fa088] rounded-xl shadow-lg shadow-emerald-600/30 hover:shadow-xl hover:shadow-emerald-600/40 transition-all duration-300 transform hover:-translate-y-1">
+                    <span class="font-semibold text-white relative z-20"><i class="fas fa-leaf mr-2"></i>SMG ESG Center: นวัตกรรมกระจกเพื่อความยั่งยืน ↗</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ FOOTER ══ -->
+    <footer class="bg-[#002b3a] pt-12 pb-8 border-t-4 border-[#6fa088]">
+        <div class="container mx-auto px-6 lg:px-16 grid grid-cols-1 md:grid-cols-2 gap-8 text-white/80">
+            <div>
+                <h4 class="text-xl font-bold text-white mb-2 font-montserrat">FairJoint v1.0</h4>
+                <p class="text-sm font-light mb-1">แพลตฟอร์มสัญญาจ้างทำของมาตรฐาน</p>
+                <p class="text-sm font-light text-[#6fa088]">พัฒนาโดย SMG Glass And Metal Co., Ltd.</p>
+                <div class="flex gap-4 mt-4">
+                    <a href="app.html" class="bg-[#6fa088] text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-[#5a8a72] transition-colors">
+                        <i class="fas fa-file-signature mr-1"></i>เปิดแอป
+                    </a>
+                    <a href="https://tong778-bot.github.io/smg-tools/" class="border border-white/30 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-white/10 transition-colors">
+                        <i class="fas fa-calculator mr-1"></i>SMG Tools
+                    </a>
+                </div>
+            </div>
+            <div class="md:text-right flex flex-col justify-center">
+                <p class="mb-2 text-sm leading-relaxed"><strong class="text-white">บริษัท เอส เอ็ม จี กลาส แอนด์ เมทัล จำกัด</strong></p>
+                <p class="mb-1 text-sm">24/22 ซอยกำนันแม้น 13 แยก 18 แขวงบางบอน เขตบางบอน กรุงเทพฯ 10150</p>
+                <p class="mb-1 text-sm"><i class="fas fa-phone mr-1"></i>086-317-4966 · <i class="fab fa-line mr-1"></i>@smg58</p>
+                <p class="text-sm"><i class="fas fa-globe mr-1"></i>smg-con.co.th</p>
+            </div>
+        </div>
+        <div class="container mx-auto px-6 lg:px-16 mt-8 pt-6 border-t border-white/10 text-center text-xs text-white/50 font-montserrat">
+            &copy; 2026 SMG GLASS AND METALS. All Rights Reserved. · สนับสนุนธรรมาภิบาลคู่ค้าตามเกณฑ์ ESG
+        </div>
+    </footer>
+
+</body>
+</html>
